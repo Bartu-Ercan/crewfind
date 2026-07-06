@@ -70,6 +70,13 @@ function readableError(caught: unknown) {
     return "Supabase kurulumu eksik: CrewFind migration dosyasını SQL Editor’da çalıştır.";
   }
 
+  if (
+    message.toLowerCase().includes("captcha") ||
+    message.includes("captcha_token")
+  ) {
+    return "Turnstile doğrulaması eksik. Vercel site key ve Supabase secret key ayarlarını kontrol et.";
+  }
+
   return message || "Havuza girilemedi.";
 }
 
@@ -144,9 +151,11 @@ export function CrewFindApp() {
     (process.env.NEXT_PUBLIC_DEMO_MODE ?? "true").trim().toLowerCase() !== "false" ||
     !hasSupabaseConfig();
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+  const turnstileFlag = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED;
   const turnstileEnabled =
-    (process.env.NEXT_PUBLIC_TURNSTILE_ENABLED ?? "false").trim().toLowerCase() ===
-      "true" && Boolean(turnstileSiteKey);
+    Boolean(turnstileSiteKey) &&
+    (turnstileFlag === undefined ||
+      turnstileFlag.trim().toLowerCase() === "true");
 
   const cleanupTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
