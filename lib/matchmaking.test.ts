@@ -1,0 +1,43 @@
+import { describe, expect, it } from "vitest";
+import { entriesAreCompatible, findBestFive, type MatchEntry } from "./matchmaking";
+
+const entry = (
+  id: string,
+  partySize: number,
+  rank = 10,
+  createdAt = 1,
+): MatchEntry => ({
+  id,
+  partySize,
+  rank,
+  minRank: 8,
+  maxRank: 12,
+  createdAt,
+});
+
+describe("matchmaking", () => {
+  it("rank aralıklarını iki yönlü kontrol eder", () => {
+    const a = entry("a", 1, 10);
+    const b = { ...entry("b", 1, 14), minRank: 9, maxRank: 15 };
+    expect(entriesAreCompatible(a, b)).toBe(false);
+  });
+
+  it("4 kişilik takımı soloyla tamamlar", () => {
+    expect(findBestFive([entry("solo", 1), entry("team", 4)])?.map((x) => x.id)).toEqual([
+      "team",
+      "solo",
+    ]);
+  });
+
+  it("mevcut takımı beş solodan önce tamamlar", () => {
+    const result = findBestFive([
+      entry("s1", 1, 10, 1),
+      entry("s2", 1, 10, 2),
+      entry("s3", 1, 10, 3),
+      entry("s4", 1, 10, 4),
+      entry("s5", 1, 10, 5),
+      entry("group", 3, 10, 6),
+    ]);
+    expect(result?.some((x) => x.id === "group")).toBe(true);
+  });
+});
