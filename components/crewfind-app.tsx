@@ -77,6 +77,10 @@ function readableError(caught: unknown) {
     return "Turnstile doğrulaması eksik. Vercel site key ve Supabase secret key ayarlarını kontrol et.";
   }
 
+  if (message.includes("one_active_queue_per_player")) {
+    return "Eski kuyruk kaydı yeni aramayı engelliyor. Supabase queue index onarım migration’ını çalıştır.";
+  }
+
   return message || "Havuza girilemedi.";
 }
 
@@ -413,6 +417,10 @@ export function CrewFindApp() {
     () => members.reduce((total, member) => total + member.partySize, 0),
     [members],
   );
+  const currentPlayerId = useMemo(
+    () => members.find((member) => member.isMe)?.playerId ?? "me",
+    [members],
+  );
 
   return (
     <main className="app-shell">
@@ -635,17 +643,22 @@ export function CrewFindApp() {
               <span>{members.length} temsilci</span>
             </div>
             <div className="messages">
-              {messages.map((item) =>
-                item.player_id === "system" ? (
-                  <div className="system-message" key={item.id}>{item.body}</div>
-                ) : (
-                  <div className={`message ${item.player_id === "me" ? "mine" : ""}`} key={item.id}>
-                    <span>{item.riot_id ?? (item.player_id === "me" ? form.riotId : "Oyuncu")}</span>
+              {messages.map((item) => {
+                if (item.player_id === "system") {
+                  return <div className="system-message" key={item.id}>{item.body}</div>;
+                }
+
+                const isOwnMessage = item.player_id === currentPlayerId || item.player_id === "me";
+                const displayName = item.riot_id ?? (isOwnMessage && form.riotId ? form.riotId : "Oyuncu");
+
+                return (
+                  <div className={`message ${isOwnMessage ? "mine" : ""}`} key={item.id}>
+                    <span>{isOwnMessage ? `Sen · ${displayName}` : displayName}</span>
                     <p>{item.body}</p>
                     <time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time>
                   </div>
-                ),
-              )}
+                );
+              })}
             </div>
             <form className="message-form" onSubmit={sendMessage}>
               <input

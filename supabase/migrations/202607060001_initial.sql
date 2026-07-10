@@ -29,7 +29,7 @@ create table public.queue_entries (
 
 create unique index one_active_queue_per_player
   on public.queue_entries(player_id)
-  where status in ('searching', 'proposed', 'matched');
+  where status in ('searching', 'proposed');
 create index queue_search_order
   on public.queue_entries(status, party_size desc, created_at);
 
