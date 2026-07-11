@@ -1,12 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Hanken_Grotesk, Rajdhani } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
-const mono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
+const rajdhani = Rajdhani({
+  subsets: ["latin", "latin-ext"],
+  weight: ["600", "700"],
+  variable: "--font-heading",
+});
+
+const hanken = Hanken_Grotesk({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-body",
+});
 
 export const metadata: Metadata = {
-  title: "CrewFind — Takımını tamamla",
+  title: "CrewFind - Takımını tamamla",
   description: "VALORANT için hızlı ve sade takım arkadaşı eşleştirmesi.",
 };
 
@@ -15,7 +23,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="tr">
-      <body className={`${geist.variable} ${mono.variable}`}>{children}</body>
+      <body className={`${rajdhani.variable} ${hanken.variable}`}>{children}</body>
     </html>
   );
 }

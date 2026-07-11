@@ -2,11 +2,19 @@
 
 VALORANT oyuncuları için ilan listesi kullanmadan çalışan takım tamamlama uygulaması:
 
-`form → arama → 30 saniyelik onay → özel lobi`
+`form -> arama -> 30 saniyelik onay -> özel lobi`
 
 Riot ID, rank ve mevcut grup büyüklüğü kullanıcı beyanıdır. Riot API ve Riot Sign On kullanılmaz.
 
-## Yerelde çalıştırma
+## Proje Yapısı
+
+- `app/`: Next.js route ve global stil kabuğu.
+- `frontend/`: Arayüz bileşenleri, client-side tipler, demo verisi ve UI yardımcıları.
+- `backend/`: Supabase istemcisi ve eşleştirme/domain mantığı.
+- `shared/`: Frontend ve backend tarafından paylaşılabilen validasyon ve rank verileri.
+- `supabase/`: Veritabanı migration dosyaları.
+
+## Yerelde Çalıştırma
 
 ```bash
 npm install
@@ -25,7 +33,7 @@ npm run dev:lan
 Ardından `http://192.168.2.106:3001` adresini açın. Yerel IP değişirse
 `next.config.ts` içindeki `allowedDevOrigins` değerini yeni IP ile güncelleyin.
 
-## Supabase kurulumu
+## Supabase Kurulumu
 
 1. Supabase projesinde Anonymous Sign-Ins özelliğini açın.
 2. `supabase/migrations/202607060001_initial.sql` migration dosyasını uygulayın.

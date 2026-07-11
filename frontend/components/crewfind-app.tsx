@@ -3,7 +3,6 @@
 import {
   ArrowLeft,
   Check,
-  ChevronDown,
   Clock3,
   Copy,
   LoaderCircle,
@@ -11,122 +10,19 @@ import {
   MessageCircle,
   Search,
   Send,
-  ShieldCheck,
-  Sparkles,
   Users,
   X,
-  Zap,
 } from "lucide-react";
 import { Turnstile } from "@marsidev/react-turnstile";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/lib/supabase";
-import { RANKS, rankName } from "@/lib/ranks";
-import { searchSchema, type SearchInput } from "@/lib/validation";
-
-type View = "home" | "searching" | "proposal" | "lobby";
-
-type Member = {
-  playerId: string;
-  riotId: string;
-  rank: number;
-  partySize: number;
-  accepted?: boolean | null;
-  isMe?: boolean;
-};
-
-type ChatMessage = {
-  id: string;
-  player_id: string;
-  body: string;
-  created_at: string;
-  riot_id?: string;
-};
-
-type StatusPayload = {
-  status: "idle" | "searching" | "proposed" | "lobby";
-  proposalId?: string;
-  lobbyId?: string;
-  expiresAt?: string;
-  members?: Member[];
-};
-
-const DEMO_NAMES = ["Kuzey#TR01", "Vortex#EUW", "Mira#ACE", "Nyx#0007"];
-
-function readableError(caught: unknown) {
-  const message =
-    caught instanceof Error
-      ? caught.message
-      : typeof caught === "object" &&
-          caught !== null &&
-          "message" in caught &&
-          typeof caught.message === "string"
-        ? caught.message
-        : "";
-
-  if (
-    message.includes("enqueue_and_attempt_match") ||
-    message.includes("Could not find the function")
-  ) {
-    return "Supabase kurulumu eksik: CrewFind migration dosyasını SQL Editor’da çalıştır.";
-  }
-
-  if (
-    message.toLowerCase().includes("captcha") ||
-    message.includes("captcha_token")
-  ) {
-    return "Turnstile doğrulaması eksik. Vercel site key ve Supabase secret key ayarlarını kontrol et.";
-  }
-
-  if (message.includes("one_active_queue_per_player")) {
-    return "Eski kuyruk kaydı yeni aramayı engelliyor. Supabase queue index onarım migration’ını çalıştır.";
-  }
-
-  return message || "Havuza girilemedi.";
-}
-
-function Brand() {
-  return (
-    <div className="brand" aria-label="CrewFind">
-      <span className="brand-mark">
-        <span />
-        <span />
-      </span>
-      <span>CrewFind</span>
-    </div>
-  );
-}
-
-function RankSelect({
-  label,
-  value,
-  onChange,
-  min = 0,
-  max = RANKS.length - 1,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
-  max?: number;
-}) {
-  return (
-    <label className="field">
-      <span>{label}</span>
-      <div className="select-wrap">
-        <select value={value} onChange={(event) => onChange(Number(event.target.value))}>
-          {RANKS.map((rank, index) =>
-            index >= min && index <= max ? (
-              <option key={rank} value={index}>
-                {rank}
-              </option>
-            ) : null,
-          )}
-        </select>
-        <ChevronDown size={17} />
-      </div>
-    </label>
-  );
-}
+import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
+import { Brand } from "@/frontend/components/brand";
+import { RankSelect } from "@/frontend/components/rank-select";
+import { DEMO_NAMES } from "@/frontend/config/demo";
+import { readableError } from "@/frontend/lib/error-messages";
+import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
+import { RANKS, rankName } from "@/shared/ranks";
+import { searchSchema, type SearchInput } from "@/shared/validation";
 
 export function CrewFindApp() {
   const [view, setView] = useState<View>("home");
@@ -287,15 +183,19 @@ export function CrewFindApp() {
     setBusy(true);
     setSearchSeconds(0);
     if (demoMode) {
-      setView("searching");
       timers.current.push(
         setTimeout(() => {
-          setMembers(makeDemoMembers());
-          setProposalId("demo-proposal");
-          setView("proposal");
-        }, 2800),
+          setView("searching");
+          setBusy(false);
+          timers.current.push(
+            setTimeout(() => {
+              setMembers(makeDemoMembers());
+              setProposalId("demo-proposal");
+              setView("proposal");
+            }, 2800),
+          );
+        }, 200),
       );
-      setBusy(false);
       return;
     }
 
@@ -424,8 +324,6 @@ export function CrewFindApp() {
 
   return (
     <main className="app-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
       <header className="topbar">
         <Brand />
         <div className="topbar-right">
@@ -435,18 +333,13 @@ export function CrewFindApp() {
       </header>
 
       {view === "home" && (
-        <section className="home-grid">
+        <section className="home-section">
           <div className="hero-copy">
-            <div className="eyebrow"><Sparkles size={14} /> Takım bulmanın kısa yolu</div>
-            <h1>Eksik oyuncuyu bul.<br /><em>Oyuna dön.</em></h1>
+            <div className="eyebrow">EU · Competitive</div>
+            <h1>Eksik oyuncuyu bul.<br />Oyuna dön.</h1>
             <p>
-              İlanlar arasında kaybolmadan, rankına uygun oyuncularla saniyeler içinde eşleş.
+              İlanlar arasında kaybolmadan, rankına uygun oyuncularla hızlıca eşleş.
             </p>
-            <div className="trust-row">
-              <span><Zap size={16} /> Hızlı eşleşme</span>
-              <span><ShieldCheck size={16} /> Geçici lobiler</span>
-              <span><MessageCircle size={16} /> Anlık sohbet</span>
-            </div>
           </div>
 
           <form className="search-card" onSubmit={startSearch}>
@@ -462,15 +355,16 @@ export function CrewFindApp() {
 
             <label className="field">
               <span>Riot ID</span>
-              <div className="riot-input">
+              <div className={`riot-input ${error ? "has-error" : form.riotId ? "is-valid" : ""}`}>
                 <input
                   ref={inputRef}
                   value={form.riotId}
                   onChange={(event) => setForm({ ...form, riotId: event.target.value })}
                   placeholder="OyuncuAdı#TR1"
                   autoComplete="off"
+                  aria-invalid={Boolean(error)}
                 />
-                <span>Doğrulanmamış</span>
+                <span>{form.riotId ? "Girildi" : "Gerekli"}</span>
               </div>
             </label>
 
@@ -535,10 +429,9 @@ export function CrewFindApp() {
             {error && <div className="error-message"><X size={15} /> {error}</div>}
             <button className="primary-button" disabled={busy}>
               {busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}
-              Oyuncu ara
+              {busy ? "Aranıyor" : "Oyuncu ara"}
               <span>{5 - form.partySize} kişi eksik</span>
             </button>
-            <p className="fine-print">Devam ederek Riot ID ve rank bilgilerinin kullanıcı beyanı olduğunu kabul edersin.</p>
           </form>
         </section>
       )}
