@@ -10,7 +10,7 @@ export const searchSchema = z
       .regex(/^[^#]{3,16}#[\p{L}\p{N}]{3,5}$/u, "İsim#ETİKET biçimini kullan."),
     rank: z.number().int().min(0).max(24),
     minRank: z.number().int().min(0).max(24),
-    maxRank: z.number().int().min(0).max(24),
+    maxRank: z.number().int().min(0).max(24).default(24),
     partySize: z.number().int().min(1).max(4),
   })
   .refine((data) => data.minRank <= data.maxRank, {

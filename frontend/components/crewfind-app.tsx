@@ -1,15 +1,17 @@
 "use client";
 
 import {
-  ArrowLeft,
   Check,
   Clock3,
   Copy,
   LoaderCircle,
   LogOut,
   MessageCircle,
+  Moon,
   Search,
   Send,
+  Sun,
+  User,
   Users,
   X,
 } from "lucide-react";
@@ -30,9 +32,13 @@ export function CrewFindApp() {
     riotId: "",
     rank: 10,
     minRank: 6,
-    maxRank: 14,
+    maxRank: RANKS.length - 1,
     partySize: 1,
   });
+  const [riotName, setRiotName] = useState("");
+  const [riotTag, setRiotTag] = useState("TR1");
+  const [openRankSelect, setOpenRankSelect] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
   const [proposalId, setProposalId] = useState<string | null>(null);
@@ -47,6 +53,8 @@ export function CrewFindApp() {
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  const riotId = useMemo(() => `${riotName.trim()}#${riotTag.trim()}`, [riotName, riotTag]);
+
   const demoMode =
     (process.env.NEXT_PUBLIC_DEMO_MODE ?? "true").trim().toLowerCase() !== "false" ||
     !hasSupabaseConfig();
@@ -56,6 +64,17 @@ export function CrewFindApp() {
     Boolean(turnstileSiteKey) &&
     (turnstileFlag === undefined ||
       turnstileFlag.trim().toLowerCase() === "true");
+
+  const applyTheme = useCallback((nextTheme: "light" | "dark") => {
+    document.documentElement.classList.toggle("dark", nextTheme === "dark");
+    localStorage.setItem("crewfind-theme", nextTheme);
+  }, []);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("crewfind-theme") === "dark" ? "dark" : "light";
+    setTheme(savedTheme);
+    applyTheme(savedTheme);
+  }, [applyTheme]);
 
   const cleanupTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -101,7 +120,7 @@ export function CrewFindApp() {
     return [
       {
         playerId: "me",
-        riotId: form.riotId,
+        riotId,
         rank: form.rank,
         partySize: form.partySize,
         accepted: null,
@@ -109,7 +128,7 @@ export function CrewFindApp() {
       },
       ...others,
     ];
-  }, [form]);
+  }, [form, riotId]);
 
   const applyStatus = useCallback((payload: StatusPayload) => {
     if (payload.status === "searching") setView("searching");
@@ -170,13 +189,14 @@ export function CrewFindApp() {
   async function startSearch(event: FormEvent) {
     event.preventDefault();
     setError("");
-    const parsed = searchSchema.safeParse(form);
+    const searchPayload = { ...form, riotId, maxRank: RANKS.length - 1 };
+    const parsed = searchSchema.safeParse(searchPayload);
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? "Bilgileri kontrol et.");
       return;
     }
-    if (form.rank < form.minRank || form.rank > form.maxRank) {
-      setError("Kendi rankın seçtiğin aralığın içinde olmalı.");
+    if (form.rank < form.minRank) {
+      setError("Kendi rankın minimum ranktan düşük olamaz.");
       return;
     }
 
@@ -212,11 +232,11 @@ export function CrewFindApp() {
         if (authError) throw authError;
       }
       const { data, error: queueError } = await client.rpc("enqueue_and_attempt_match", {
-        p_riot_id: form.riotId.trim(),
+        p_riot_id: searchPayload.riotId.trim(),
         p_rank: form.rank,
         p_party_size: form.partySize,
         p_min_rank: form.minRank,
-        p_max_rank: form.maxRank,
+        p_max_rank: searchPayload.maxRank,
       });
       if (queueError) throw queueError;
       applyStatus(data as StatusPayload);
@@ -294,7 +314,7 @@ export function CrewFindApp() {
           player_id: "me",
           body,
           created_at: new Date().toISOString(),
-          riot_id: form.riotId,
+          riot_id: riotId,
         },
       ]);
       return;
@@ -323,96 +343,104 @@ export function CrewFindApp() {
   );
 
   return (
-    <main className="app-shell">
+    <main className="app-shell bg-[var(--bg)] text-[var(--text-primary)] dark:bg-[var(--bg)] dark:text-[var(--text-primary)]">
       <header className="topbar">
         <Brand />
         <div className="topbar-right">
-          {demoMode && <span className="demo-pill">Demo modu</span>}
-          <span className="region-pill"><span /> EU · Competitive</span>
+          <span className="region-pill">EU · Competitive</span>
+          <button
+            type="button"
+            className="theme-toggle"
+            aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
+            onClick={() => {
+              const nextTheme = theme === "dark" ? "light" : "dark";
+              setTheme(nextTheme);
+              applyTheme(nextTheme);
+            }}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
       </header>
 
       {view === "home" && (
         <section className="home-section">
           <div className="hero-copy">
-            <div className="eyebrow">EU · Competitive</div>
-            <h1>Eksik oyuncuyu bul.<br />Oyuna dön.</h1>
+            <div className="eyebrow">Takım bulmanın kısa yolu</div>
+            <h1>Eksik oyuncuyu bul.</h1>
             <p>
-              İlanlar arasında kaybolmadan, rankına uygun oyuncularla hızlıca eşleş.
+              Rankına uygun oyuncularla saniyeler içinde eşleş.
             </p>
           </div>
 
-          <form className="search-card" onSubmit={startSearch}>
-            <div className="card-heading">
-              <div>
-                <span className="step-kicker">Hemen başla</span>
-                <h2>Takımını tamamla</h2>
-              </div>
-              <div className="five-stack">
-                {[0, 1, 2, 3, 4].map((dot) => <span key={dot} className={dot < form.partySize ? "active" : ""} />)}
+          <form className="search-form" onSubmit={startSearch}>
+            <div className="field">
+              <div className={`riot-input ${error ? "has-error" : riotName ? "is-valid" : ""}`}>
+                <User size={15} aria-hidden="true" />
+                <input
+                  ref={inputRef}
+                  value={riotName}
+                  onChange={(event) => setRiotName(event.target.value.replace(/#/g, "").slice(0, 16))}
+                  placeholder="OyuncuAdı"
+                  autoComplete="off"
+                  aria-label="Riot kullanıcı adı"
+                  aria-invalid={Boolean(error)}
+                />
+                <div className="riot-tag">
+                  <span>#</span>
+                  <input
+                    value={riotTag}
+                    onChange={(event) =>
+                      setRiotTag(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5))
+                    }
+                    placeholder="TR1"
+                    aria-label="Riot etiketi"
+                    autoComplete="off"
+                  />
+                </div>
               </div>
             </div>
 
-            <label className="field">
-              <span>Riot ID</span>
-              <div className={`riot-input ${error ? "has-error" : form.riotId ? "is-valid" : ""}`}>
-                <input
-                  ref={inputRef}
-                  value={form.riotId}
-                  onChange={(event) => setForm({ ...form, riotId: event.target.value })}
-                  placeholder="OyuncuAdı#TR1"
-                  autoComplete="off"
-                  aria-invalid={Boolean(error)}
-                />
-                <span>{form.riotId ? "Girildi" : "Gerekli"}</span>
-              </div>
-            </label>
-
             <div className="form-row">
               <RankSelect
+                id="rank"
                 label="Rankın"
                 value={form.rank}
+                open={openRankSelect === "rank"}
+                onOpenChange={setOpenRankSelect}
                 onChange={(rank) =>
                   setForm({
                     ...form,
                     rank,
                     minRank: Math.min(form.minRank, rank),
-                    maxRank: Math.max(form.maxRank, rank),
+                    maxRank: RANKS.length - 1,
                   })
                 }
               />
-              <label className="field">
-                <span>Kaç kişisiniz?</span>
-                <div className="party-picker">
-                  {[1, 2, 3, 4].map((size) => (
-                    <button
-                      type="button"
-                      key={size}
-                      className={form.partySize === size ? "selected" : ""}
-                      onClick={() => setForm({ ...form, partySize: size })}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </label>
+              <RankSelect
+                id="min-rank"
+                label="Min. rank"
+                value={form.minRank}
+                max={form.rank}
+                open={openRankSelect === "min-rank"}
+                onOpenChange={setOpenRankSelect}
+                onChange={(minRank) => setForm({ ...form, minRank, maxRank: RANKS.length - 1 })}
+              />
             </div>
 
-            <div className="range-block">
-              <span className="range-title">Kabul ettiğin rank aralığı</span>
-              <div className="form-row">
-                <RankSelect
-                  label="Minimum"
-                  value={form.minRank}
-                  max={form.rank}
-                  onChange={(minRank) => setForm({ ...form, minRank })}
-                />
-                <RankSelect
-                  label="Maksimum"
-                  value={form.maxRank}
-                  min={form.rank}
-                  onChange={(maxRank) => setForm({ ...form, maxRank })}
-                />
+            <div className="field">
+              <span>Kaç kişisiniz?</span>
+              <div className="party-picker">
+                {[1, 2, 3, 4].map((size) => (
+                  <button
+                    type="button"
+                    key={size}
+                    className={form.partySize === size ? "selected" : ""}
+                    onClick={() => setForm({ ...form, partySize: size })}
+                  >
+                    {form.partySize === size ? `${size} kişi` : size}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -422,15 +450,14 @@ export function CrewFindApp() {
                   siteKey={turnstileSiteKey}
                   onSuccess={setCaptchaToken}
                   onExpire={() => setCaptchaToken("")}
-                  options={{ theme: "dark", size: "flexible" }}
+                  options={{ theme, size: "flexible" }}
                 />
               </div>
             )}
             {error && <div className="error-message"><X size={15} /> {error}</div>}
             <button className="primary-button" disabled={busy}>
               {busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}
-              {busy ? "Aranıyor" : "Oyuncu ara"}
-              <span>{5 - form.partySize} kişi eksik</span>
+              {busy ? "Aranıyor..." : "Oyuncu ara"}
             </button>
           </form>
         </section>
@@ -438,22 +465,17 @@ export function CrewFindApp() {
 
       {view === "searching" && (
         <section className="center-stage">
-          <div className="status-card searching-card">
-            <div className="radar">
-              <span className="radar-ring ring-one" />
-              <span className="radar-ring ring-two" />
-              <span className="radar-ring ring-three" />
-              <div className="radar-core"><Users size={29} /></div>
-            </div>
+          <div className="searching-panel">
+            <div className="matchmaking-badge"><Users size={34} /></div>
             <span className="step-kicker">Eşleştirme sürüyor</span>
             <h2>Takım arkadaşların aranıyor</h2>
-            <p>{rankName(form.minRank)} – {rankName(form.maxRank)} arasındaki oyunculara bakıyoruz.</p>
+            <p>{rankName(form.minRank)} ve üzerindeki uygun oyunculara bakıyoruz.</p>
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
               <div><span>Aranan</span><strong>{5 - form.partySize} oyuncu</strong></div>
-              <div><span>Bölge</span><strong>EU</strong></div>
+              <div><span>Bölge</span><strong>EU · Competitive</strong></div>
             </div>
-            <button className="ghost-button" onClick={leave}><ArrowLeft size={17} /> Aramayı iptal et</button>
+            <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
           </div>
         </section>
       )}
@@ -542,7 +564,7 @@ export function CrewFindApp() {
                 }
 
                 const isOwnMessage = item.player_id === currentPlayerId || item.player_id === "me";
-                const displayName = item.riot_id ?? (isOwnMessage && form.riotId ? form.riotId : "Oyuncu");
+                const displayName = item.riot_id ?? (isOwnMessage && riotName ? riotId : "Oyuncu");
 
                 return (
                   <div className={`message ${isOwnMessage ? "mine" : ""}`} key={item.id}>
@@ -566,11 +588,6 @@ export function CrewFindApp() {
         </section>
       )}
 
-      <footer>
-        <span>© 2026 CrewFind</span>
-        <p>Riot Games ile bağlantılı veya Riot Games tarafından desteklenen bir hizmet değildir.</p>
-        <nav><a href="#">Gizlilik</a><a href="#">Koşullar</a></nav>
-      </footer>
     </main>
   );
 }
