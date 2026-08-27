@@ -1,5 +1,7 @@
 import { ChevronDown, Shield } from "lucide-react";
+import { useRef } from "react";
 
+import { useClickOutside } from "@/frontend/hooks/use-click-outside";
 import { RANKS, RANK_TIER_COLORS, rankParts } from "@/shared/ranks";
 
 type RankSelectProps = {
@@ -51,11 +53,13 @@ export function RankSelect({
 }: RankSelectProps) {
   const selected = rankOptions[value] ?? rankOptions[0];
   const listboxId = `${id}-listbox`;
+  const ref = useRef<HTMLDivElement>(null);
+  useClickOutside(ref, open, () => onOpenChange(null));
 
   return (
     <div className="field rank-field">
       <span>{label}</span>
-      <div className="rank-select">
+      <div className="rank-select" ref={ref}>
         <button
           type="button"
           className="rank-trigger"

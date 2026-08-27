@@ -656,6 +656,51 @@ h3,
   padding: 4px;
 }
 
+.match-target-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  min-height: 52px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 88%, var(--bg));
+}
+
+.match-target-picker button {
+  min-width: 0;
+  border: 0;
+  border-radius: 999px;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+.match-target-picker button.selected {
+  color: var(--on-accent);
+  background: var(--accent);
+}
+
+.match-target-picker strong,
+.match-target-picker small {
+  display: block;
+  line-height: 1.05;
+}
+
+.match-target-picker strong {
+  font-size: 12px;
+}
+
+.match-target-picker small {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.match-target-picker button:not(.selected) small {
+  color: var(--text-muted);
+}
+
 .party-picker button {
   min-width: 0;
   border: 0;

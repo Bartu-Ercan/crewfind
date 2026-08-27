@@ -1,7 +1,8 @@
 "use client";
 
 import { Check, ChevronDown, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useClickOutside } from "@/frontend/hooks/use-click-outside";
 import {
   QUEUE_TYPES,
   VALORANT_SERVERS,
@@ -14,32 +15,41 @@ type QueueSelectorProps = {
   server: ValorantServer;
   queueType: QueueType;
   onChange: (filters: { server: ValorantServer; queueType: QueueType }) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function QueueSelector({ server, queueType, onChange }: QueueSelectorProps) {
-  const [open, setOpen] = useState(false);
+export function QueueSelector({ server, queueType, onChange, open, onOpenChange }: QueueSelectorProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const isOpen = open ?? uncontrolledOpen;
+  const setOpen = useCallback((nextOpen: boolean) => {
+    if (open === undefined) setUncontrolledOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  }, [onOpenChange, open]);
   const menuId = "queue-selector-menu";
+  useClickOutside(ref, isOpen, () => setOpen(false));
 
   return (
-    <div className="queue-selector">
+    <div className="queue-selector" ref={ref}>
       <button
         type="button"
         className="queue-selector-trigger"
-        aria-expanded={open}
+        aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-label={`Sunucu ve kuyruk: ${queueLabel(server, queueType)}`}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => setOpen(!isOpen)}
       >
         <MapPin size={15} aria-hidden="true" />
         <span className="queue-selector-trigger-label">
           <strong>{VALORANT_SERVERS.find((option) => option.value === server)?.label}</strong>
           <small>{QUEUE_TYPES.find((option) => option.value === queueType)?.label}</small>
         </span>
-        <ChevronDown className={open ? "open" : ""} size={14} aria-hidden="true" />
+        <ChevronDown className={isOpen ? "open" : ""} size={14} aria-hidden="true" />
       </button>
 
-      {open ? (
+      {isOpen ? (
         <div className="queue-selector-menu" id={menuId} role="menu">
           <div className="queue-selector-group">
             <span>VALORANT sunucusu</span>

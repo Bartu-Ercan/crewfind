@@ -1,6 +1,7 @@
 export type MatchEntry = {
   id: string;
   partySize: number;
+  targetSize: number;
   rank: number;
   minRank: number;
   maxRank: number;
@@ -16,7 +17,8 @@ export function entriesAreCompatible(a: MatchEntry, b: MatchEntry) {
     b.rank >= a.minRank &&
     b.rank <= a.maxRank &&
     a.server === b.server &&
-    a.queueType === b.queueType
+    a.queueType === b.queueType &&
+    a.targetSize === b.targetSize
   );
 }
 
@@ -31,11 +33,12 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
   let best: MatchEntry[] | null = null;
 
   function walk(index: number, selected: MatchEntry[], total: number) {
-    if (total === 5) {
+    const targetSize = selected[0]?.targetSize ?? 5;
+    if (total === targetSize) {
       best = [...selected];
       return true;
     }
-    if (total > 5) return false;
+    if (total > targetSize) return false;
 
     for (let i = index; i < ordered.length; i += 1) {
       const candidate = ordered[i];

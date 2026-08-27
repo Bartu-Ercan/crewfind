@@ -9,6 +9,7 @@ const entry = (
 ): MatchEntry => ({
   id,
   partySize,
+  targetSize: 5,
   rank,
   minRank: 8,
   maxRank: 12,
@@ -27,6 +28,16 @@ describe("matchmaking", () => {
   it("yalnızca aynı sunucu ve kuyruktaki oyuncuları eşleştirir", () => {
     expect(entriesAreCompatible(entry("frankfurt", 1), { ...entry("istanbul", 1), server: "istanbul" })).toBe(false);
     expect(entriesAreCompatible(entry("competitive", 1), { ...entry("unrated", 1), queueType: "unrated" })).toBe(false);
+  });
+
+  it("duo aramasını tam takım aramasından ayırır", () => {
+    const duo = { ...entry("duo", 1), targetSize: 2 };
+    const fullTeam = entry("full-team", 1);
+    expect(entriesAreCompatible(duo, fullTeam)).toBe(false);
+    expect(findBestFive([duo, { ...entry("partner", 1), targetSize: 2 }])?.map((x) => x.id)).toEqual([
+      "duo",
+      "partner",
+    ]);
   });
 
   it("4 kişilik takımı soloyla tamamlar", () => {

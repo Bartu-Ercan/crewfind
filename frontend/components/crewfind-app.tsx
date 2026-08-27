@@ -37,12 +37,14 @@ export function CrewFindApp() {
     minRank: 6,
     maxRank: RANKS.length - 1,
     partySize: 1,
-    server: "frankfurt",
+    targetSize: 5,
+    server: "istanbul",
     queueType: "competitive",
   });
   const [riotName, setRiotName] = useState("");
   const [riotTag, setRiotTag] = useState("TR1");
   const [openRankSelect, setOpenRankSelect] = useState<string | null>(null);
+  const [openTopbarSelect, setOpenTopbarSelect] = useState<"game" | "queue" | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
@@ -114,7 +116,7 @@ export function CrewFindApp() {
   }, [view, demoMode]);
 
   const makeDemoMembers = useCallback(() => {
-    const missing = 5 - form.partySize;
+    const missing = form.targetSize - form.partySize;
     const others: Member[] = Array.from({ length: missing }, (_, index) => ({
       playerId: `demo-${index}`,
       riotId: DEMO_NAMES[index],
@@ -244,6 +246,7 @@ export function CrewFindApp() {
         p_max_rank: searchPayload.maxRank,
         p_server: form.server,
         p_queue_type: form.queueType,
+        p_target_size: form.targetSize,
       });
       if (queueError) throw queueError;
       applyStatus(data as StatusPayload);
@@ -354,17 +357,30 @@ export function CrewFindApp() {
       <header className="topbar">
         <Brand />
         <div className="topbar-right">
-          <GameSelector />
+          <GameSelector
+            open={openTopbarSelect === "game"}
+            onOpenChange={(open) => {
+              setOpenTopbarSelect(open ? "game" : null);
+              if (open) setOpenRankSelect(null);
+            }}
+          />
           <QueueSelector
             server={form.server}
             queueType={form.queueType}
             onChange={(filters) => setForm((current) => ({ ...current, ...filters }))}
+            open={openTopbarSelect === "queue"}
+            onOpenChange={(open) => {
+              setOpenTopbarSelect(open ? "queue" : null);
+              if (open) setOpenRankSelect(null);
+            }}
           />
           <button
             type="button"
             className="theme-toggle"
             aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"}
             onClick={() => {
+              setOpenTopbarSelect(null);
+              setOpenRankSelect(null);
               const nextTheme = theme === "dark" ? "light" : "dark";
               setTheme(nextTheme);
               applyTheme(nextTheme);
@@ -419,7 +435,10 @@ export function CrewFindApp() {
                 label="Rankın"
                 value={form.rank}
                 open={openRankSelect === "rank"}
-                onOpenChange={setOpenRankSelect}
+                onOpenChange={(id) => {
+                  setOpenRankSelect(id);
+                  if (id) setOpenTopbarSelect(null);
+                }}
                 onChange={(rank) =>
                   setForm({
                     ...form,
@@ -435,7 +454,10 @@ export function CrewFindApp() {
                 value={form.minRank}
                 max={form.rank}
                 open={openRankSelect === "min-rank"}
-                onOpenChange={setOpenRankSelect}
+                onOpenChange={(id) => {
+                  setOpenRankSelect(id);
+                  if (id) setOpenTopbarSelect(null);
+                }}
                 onChange={(minRank) => setForm({ ...form, minRank, maxRank: RANKS.length - 1 })}
               />
             </div>
@@ -448,9 +470,33 @@ export function CrewFindApp() {
                     type="button"
                     key={size}
                     className={form.partySize === size ? "selected" : ""}
+                    disabled={size > form.targetSize}
                     onClick={() => setForm({ ...form, partySize: size })}
                   >
                     {form.partySize === size ? `${size} kişi` : size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="field">
+              <span>Ne arıyorsun?</span>
+              <div className="match-target-picker">
+                {[5, 2].map((targetSize) => (
+                  <button
+                    type="button"
+                    key={targetSize}
+                    className={form.targetSize === targetSize ? "selected" : ""}
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        targetSize: targetSize as 2 | 5,
+                        partySize: Math.min(current.partySize, targetSize),
+                      }))
+                    }
+                  >
+                    <strong>{targetSize === 5 ? "Tam takım" : "Duo"}</strong>
+                    <small>{targetSize} kişi</small>
                   </button>
                 ))}
               </div>
@@ -484,7 +530,7 @@ export function CrewFindApp() {
             <p>{rankName(form.minRank)} ve üzerindeki uygun oyunculara bakıyoruz.</p>
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
-              <div><span>Aranan</span><strong>{5 - form.partySize} oyuncu</strong></div>
+              <div><span>Aranan</span><strong>{form.targetSize - form.partySize} oyuncu</strong></div>
               <div><span>Sunucu</span><strong>{queueLabel(form.server, form.queueType)}</strong></div>
             </div>
             <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
@@ -521,7 +567,7 @@ export function CrewFindApp() {
                 </div>
               ))}
             </div>
-            <p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/5</strong></p>
+            <p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>
             {error && <div className="error-message"><X size={15} /> {error}</div>}
             <div className="proposal-actions">
               <button className="reject-button" disabled={busy} onClick={() => respond(false)}><X size={18} /> Reddet</button>
