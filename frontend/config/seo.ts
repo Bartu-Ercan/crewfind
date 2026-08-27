@@ -44,6 +44,6 @@ export const seo = {
   ],
 };
 
-export const canonicalUrl = new URL("/", siteUrl).toString();
+export const canonicalUrl = new URL("/valorant", siteUrl).toString();
 
 export const bilingualDescription = `${seo.description} ${seo.englishDescription}`;
