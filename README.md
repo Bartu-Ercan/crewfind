@@ -1,5 +1,9 @@
 # CrewFind
 
+Ürün, marka, tasarım kısıtları ve yol haritası için
+[`docs/CREWFIND_PROJECT_CONTEXT.md`](docs/CREWFIND_PROJECT_CONTEXT.md) dosyasını tek doğruluk
+kaynağı olarak kullanın.
+
 VALORANT oyuncuları için ilan listesi kullanmadan çalışan takım tamamlama uygulaması:
 
 `form -> arama -> 30 saniyelik onay -> özel lobi`

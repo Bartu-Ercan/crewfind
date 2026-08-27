@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Rajdhani } from "next/font/google";
+import { bilingualDescription, canonicalUrl, seo, siteName, siteUrl } from "@/frontend/config/seo";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -14,8 +15,51 @@ const hanken = Hanken_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "CrewFind - Takımını tamamla",
-  description: "VALORANT için hızlı ve sade takım arkadaşı eşleştirmesi.",
+  metadataBase: new URL(siteUrl),
+  applicationName: siteName,
+  title: {
+    default: seo.title,
+    template: `%s | ${siteName}`,
+  },
+  description: seo.description,
+  keywords: seo.keywords,
+  authors: [{ name: siteName }],
+  creator: siteName,
+  publisher: siteName,
+  alternates: {
+    canonical: canonicalUrl,
+  },
+  openGraph: {
+    type: "website",
+    url: canonicalUrl,
+    siteName,
+    title: seo.title,
+    description: bilingualDescription,
+    locale: "tr_TR",
+    alternateLocale: ["en_US"],
+  },
+  twitter: {
+    card: "summary",
+    title: seo.englishTitle,
+    description: seo.englishDescription,
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  category: "gaming",
+  other: {
+    "content-language": "tr-TR, en-US",
+    "og:title:en": seo.englishTitle,
+    "og:description:en": seo.englishDescription,
+  },
 };
 
 export default function RootLayout({
