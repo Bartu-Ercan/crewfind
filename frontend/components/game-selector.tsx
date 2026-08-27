@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { Bomb, Check, ChevronDown, Crosshair, Swords } from "lucide-react";
+import { Check, ChevronDown, Crosshair, Swords, Target } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 const games = [
   { href: "/valorant", name: "VALORANT", icon: Crosshair },
   { href: "/league-of-legends", name: "League of Legends", icon: Swords },
-  { href: "/cs2", name: "Counter-Strike 2", icon: Bomb },
+  { href: "/cs2", name: "Counter-Strike 2", icon: Target },
 ] as const;
 
 export function GameSelector() {

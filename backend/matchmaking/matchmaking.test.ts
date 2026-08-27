@@ -12,6 +12,8 @@ const entry = (
   rank,
   minRank: 8,
   maxRank: 12,
+  region: "eu",
+  queueType: "competitive",
   createdAt,
 });
 
@@ -20,6 +22,11 @@ describe("matchmaking", () => {
     const a = entry("a", 1, 10);
     const b = { ...entry("b", 1, 14), minRank: 9, maxRank: 15 };
     expect(entriesAreCompatible(a, b)).toBe(false);
+  });
+
+  it("yalnızca aynı bölge ve kuyruktaki oyuncuları eşleştirir", () => {
+    expect(entriesAreCompatible(entry("eu", 1), { ...entry("tr", 1), region: "tr" })).toBe(false);
+    expect(entriesAreCompatible(entry("competitive", 1), { ...entry("unrated", 1), queueType: "unrated" })).toBe(false);
   });
 
   it("4 kişilik takımı soloyla tamamlar", () => {

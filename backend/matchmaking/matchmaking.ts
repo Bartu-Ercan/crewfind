@@ -4,6 +4,8 @@ export type MatchEntry = {
   rank: number;
   minRank: number;
   maxRank: number;
+  region: string;
+  queueType: string;
   createdAt: number;
 };
 
@@ -12,7 +14,9 @@ export function entriesAreCompatible(a: MatchEntry, b: MatchEntry) {
     a.rank >= b.minRank &&
     a.rank <= b.maxRank &&
     b.rank >= a.minRank &&
-    b.rank <= a.maxRank
+    b.rank <= a.maxRank &&
+    a.region === b.region &&
+    a.queueType === b.queueType
   );
 }
 

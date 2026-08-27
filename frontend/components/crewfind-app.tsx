@@ -20,11 +20,13 @@ import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "re
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
 import { Brand } from "@/frontend/components/brand";
 import { GameSelector } from "@/frontend/components/game-selector";
+import { QueueSelector } from "@/frontend/components/queue-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { readableError } from "@/frontend/lib/error-messages";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import { RANKS, rankName } from "@/shared/ranks";
+import { queueLabel } from "@/shared/queue-filters";
 import { searchSchema, type SearchInput } from "@/shared/validation";
 
 export function CrewFindApp() {
@@ -35,6 +37,8 @@ export function CrewFindApp() {
     minRank: 6,
     maxRank: RANKS.length - 1,
     partySize: 1,
+    region: "eu",
+    queueType: "competitive",
   });
   const [riotName, setRiotName] = useState("");
   const [riotTag, setRiotTag] = useState("TR1");
@@ -238,6 +242,8 @@ export function CrewFindApp() {
         p_party_size: form.partySize,
         p_min_rank: form.minRank,
         p_max_rank: searchPayload.maxRank,
+        p_region: form.region,
+        p_queue_type: form.queueType,
       });
       if (queueError) throw queueError;
       applyStatus(data as StatusPayload);
@@ -349,7 +355,11 @@ export function CrewFindApp() {
         <Brand />
         <div className="topbar-right">
           <GameSelector />
-          <span className="region-pill">EU · Competitive</span>
+          <QueueSelector
+            region={form.region}
+            queueType={form.queueType}
+            onChange={(filters) => setForm((current) => ({ ...current, ...filters }))}
+          />
           <button
             type="button"
             className="theme-toggle"
@@ -475,7 +485,7 @@ export function CrewFindApp() {
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
               <div><span>Aranan</span><strong>{5 - form.partySize} oyuncu</strong></div>
-              <div><span>Bölge</span><strong>EU · Competitive</strong></div>
+              <div><span>Bölge</span><strong>{queueLabel(form.region, form.queueType)}</strong></div>
             </div>
             <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
           </div>
