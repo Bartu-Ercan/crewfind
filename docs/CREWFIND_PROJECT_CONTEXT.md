@@ -110,6 +110,14 @@ Kademe renkleri:
 - Seçenekler 1/2/3/4.
 - Seçili değer accent dolgulu ve `1 kişi` gibi açık metinlidir.
 
+### Kaç Kişi Arıyorsunuz
+
+- `Kaç Kişisiniz` kontrolüyle aynı ölçüde rounded-full segmented control kullanılır.
+- Seçenekler her zaman 1/2/3/4 olarak görünür; kontrolün boyutu seçime göre değişmez.
+- Varsayılan hedef mevcut grubu beş kişiye tamamlamaktır.
+- Mevcut grupla birlikte beş kişiyi aşacak seçenekler yerinde kalır, soluk gösterilir ve tıklanamaz.
+- Seçili değer accent dolgulu ve `1 kişi` gibi açık metinlidir.
+
 ### CTA Buton
 
 - Tam genişlik, rounded-full ve accent dolgulu.

@@ -45,6 +45,7 @@ export function CrewFindApp() {
   const [riotTag, setRiotTag] = useState("TR1");
   const [openRankSelect, setOpenRankSelect] = useState<string | null>(null);
   const [openTopbarSelect, setOpenTopbarSelect] = useState<"game" | "queue" | null>(null);
+  const [logoHighlight, setLogoHighlight] = useState<"crew" | "find">("crew");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
@@ -154,7 +155,10 @@ export function CrewFindApp() {
       setMembers(payload.members ?? []);
       setView("lobby");
     }
-    if (payload.status === "idle") setView("home");
+    if (payload.status === "idle") {
+      setView("home");
+      setLogoHighlight("crew");
+    }
   }, []);
 
   useEffect(() => {
@@ -207,6 +211,7 @@ export function CrewFindApp() {
       return;
     }
 
+    setLogoHighlight("find");
     setBusy(true);
     setSearchSeconds(0);
     if (demoMode) {
@@ -253,6 +258,7 @@ export function CrewFindApp() {
     } catch (caught) {
       setError(readableError(caught));
       setView("home");
+      setLogoHighlight("crew");
     } finally {
       setBusy(false);
     }
@@ -263,6 +269,7 @@ export function CrewFindApp() {
     if (demoMode) {
       if (!accepted) {
         setView("home");
+        setLogoHighlight("crew");
         setMembers([]);
         setBusy(false);
         return;
@@ -305,6 +312,7 @@ export function CrewFindApp() {
       await client.rpc("leave_current");
     }
     setView("home");
+    setLogoHighlight("crew");
     setMembers([]);
     setMessages([]);
     setProposalId(null);
@@ -355,7 +363,7 @@ export function CrewFindApp() {
   return (
     <main className="app-shell bg-[var(--bg)] text-[var(--text-primary)] dark:bg-[var(--bg)] dark:text-[var(--text-primary)]">
       <header className="topbar">
-        <Brand />
+        <Brand highlight={logoHighlight} />
         <div className="topbar-right">
           <GameSelector
             open={openTopbarSelect === "game"}
@@ -470,8 +478,7 @@ export function CrewFindApp() {
                     type="button"
                     key={size}
                     className={form.partySize === size ? "selected" : ""}
-                    disabled={size > form.targetSize}
-                    onClick={() => setForm({ ...form, partySize: size })}
+                    onClick={() => setForm({ ...form, partySize: size, targetSize: 5 })}
                   >
                     {form.partySize === size ? `${size} kişi` : size}
                   </button>
@@ -480,25 +487,32 @@ export function CrewFindApp() {
             </div>
 
             <div className="field">
-              <span>Ne arıyorsun?</span>
-              <div className="match-target-picker">
-                {[5, 2].map((targetSize) => (
-                  <button
-                    type="button"
-                    key={targetSize}
-                    className={form.targetSize === targetSize ? "selected" : ""}
-                    onClick={() =>
-                      setForm((current) => ({
-                        ...current,
-                        targetSize: targetSize as 2 | 5,
-                        partySize: Math.min(current.partySize, targetSize),
-                      }))
-                    }
-                  >
-                    <strong>{targetSize === 5 ? "Tam takım" : "Duo"}</strong>
-                    <small>{targetSize} kişi</small>
-                  </button>
-                ))}
+              <span>Kaç kişi arıyorsunuz?</span>
+              <div className="party-picker search-count-picker">
+                {[1, 2, 3, 4].map((requestedPlayers) => {
+                  const unavailable = requestedPlayers > 5 - form.partySize;
+                  return (
+                    <button
+                      type="button"
+                      key={requestedPlayers}
+                      className={
+                        form.targetSize - form.partySize === requestedPlayers ? "selected" : ""
+                      }
+                      disabled={unavailable}
+                      aria-label={`${requestedPlayers} kişi ara${unavailable ? ", kullanılamaz" : ""}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          targetSize: current.partySize + requestedPlayers,
+                        }))
+                      }
+                    >
+                      {form.targetSize - form.partySize === requestedPlayers
+                        ? `${requestedPlayers} kişi`
+                        : requestedPlayers}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 

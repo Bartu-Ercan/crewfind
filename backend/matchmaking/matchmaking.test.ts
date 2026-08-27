@@ -40,6 +40,19 @@ describe("matchmaking", () => {
     ]);
   });
 
+  it("üç ve dört kişilik ara hedefleri ayrı eşleştirir", () => {
+    const trioTarget = { ...entry("trio-target", 1), targetSize: 3 };
+    const quartetTarget = { ...entry("quartet-target", 1), targetSize: 4 };
+
+    expect(entriesAreCompatible(trioTarget, quartetTarget)).toBe(false);
+    expect(
+      findBestFive([
+        trioTarget,
+        { ...entry("trio-partner", 2), targetSize: 3 },
+      ])?.map((x) => x.id),
+    ).toEqual(["trio-partner", "trio-target"]);
+  });
+
   it("4 kişilik takımı soloyla tamamlar", () => {
     expect(findBestFive([entry("solo", 1), entry("team", 4)])?.map((x) => x.id)).toEqual([
       "team",

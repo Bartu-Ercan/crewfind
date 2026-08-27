@@ -13,7 +13,7 @@ export const searchSchema = z
     minRank: z.number().int().min(0).max(24),
     maxRank: z.number().int().min(0).max(24).default(24),
     partySize: z.number().int().min(1).max(4),
-    targetSize: z.union([z.literal(2), z.literal(5)]),
+    targetSize: z.number().int().min(2).max(5),
     server: z.enum(
       VALORANT_SERVERS.map((option) => option.value) as [
         "frankfurt",

@@ -1,11 +1,13 @@
-export function Brand() {
+type BrandProps = {
+  highlight?: "crew" | "find";
+};
+
+export function Brand({ highlight = "crew" }: BrandProps) {
   return (
-    <div className="brand" aria-label="CrewFind">
-      <span className="brand-mark">
-        <span />
-        <span />
-      </span>
-      <span>CrewFind</span>
+    <div className={`brand brand-${highlight}`} aria-label="CrewFind">
+      <span className="brand-highlight" aria-hidden="true" />
+      <span className="brand-word brand-word-crew">Crew</span>
+      <span className="brand-word brand-word-find">Find</span>
     </div>
   );
 }

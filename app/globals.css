@@ -123,25 +123,50 @@ h3,
 }
 
 .brand {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  isolation: isolate;
   color: var(--text-primary);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: 0;
 }
 
-.brand-mark {
-  width: 26px;
-  height: 26px;
-  display: inline-flex;
-  border-radius: 8px;
+.brand-highlight {
+  position: absolute;
+  z-index: -1;
+  left: 0;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
   background: var(--accent);
+  transition: transform 360ms ease-in-out, width 360ms ease-in-out;
 }
 
-.brand-mark span {
-  display: none;
+.brand-find .brand-highlight {
+  width: 44px;
+  transform: translateX(52px);
+}
+
+.brand-word {
+  display: inline-grid;
+  place-items: center;
+  height: 30px;
+  transition: color 360ms ease-in-out;
+}
+
+.brand-word-crew {
+  width: 52px;
+}
+
+.brand-word-find {
+  width: 44px;
+}
+
+.brand-crew .brand-word-crew,
+.brand-find .brand-word-find {
+  color: var(--on-accent);
 }
 
 .topbar-right {
@@ -656,51 +681,6 @@ h3,
   padding: 4px;
 }
 
-.match-target-picker {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px;
-  min-height: 52px;
-  padding: 4px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--bg));
-}
-
-.match-target-picker button {
-  min-width: 0;
-  border: 0;
-  border-radius: 999px;
-  color: var(--text-secondary);
-  background: transparent;
-  transition: background-color 180ms ease, color 180ms ease;
-}
-
-.match-target-picker button.selected {
-  color: var(--on-accent);
-  background: var(--accent);
-}
-
-.match-target-picker strong,
-.match-target-picker small {
-  display: block;
-  line-height: 1.05;
-}
-
-.match-target-picker strong {
-  font-size: 12px;
-}
-
-.match-target-picker small {
-  margin-top: 3px;
-  font-size: 10px;
-  font-weight: 600;
-}
-
-.match-target-picker button:not(.selected) small {
-  color: var(--text-muted);
-}
-
 .party-picker button {
   min-width: 0;
   border: 0;
@@ -716,6 +696,13 @@ h3,
 .party-picker button.selected {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+.party-picker button:disabled {
+  background: transparent;
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.38;
 }
 
 .turnstile-wrap {
