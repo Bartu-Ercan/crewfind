@@ -150,6 +150,73 @@ h3,
   gap: 8px;
 }
 
+.game-selector {
+  position: relative;
+}
+
+.game-selector-trigger,
+.game-selector-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.game-selector-trigger {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+}
+
+.game-selector-trigger > span {
+  max-width: 116px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.game-selector-trigger .open {
+  transform: rotate(180deg);
+}
+
+.game-selector-trigger svg:last-child {
+  transition: transform 180ms ease;
+}
+
+.game-selector-menu {
+  position: absolute;
+  z-index: 30;
+  width: 210px;
+  top: calc(100% + 8px);
+  right: 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+.game-selector-option {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  text-decoration: none;
+}
+
+.game-selector-option > span {
+  min-width: 0;
+  flex: 1;
+}
+
+.game-selector-option:hover,
+.game-selector-option.selected {
+  color: var(--text-primary);
+  background: var(--accent-soft);
+}
+
 .region-pill,
 .theme-toggle {
   min-height: 34px;
@@ -1018,7 +1085,7 @@ h3,
   }
 
   .region-pill {
-    padding: 0 12px;
+    display: none;
   }
 
   .home-section {

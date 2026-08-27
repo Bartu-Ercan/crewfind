@@ -19,6 +19,7 @@ import { Turnstile } from "@marsidev/react-turnstile";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
 import { Brand } from "@/frontend/components/brand";
+import { GameSelector } from "@/frontend/components/game-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { readableError } from "@/frontend/lib/error-messages";
@@ -347,6 +348,7 @@ export function CrewFindApp() {
       <header className="topbar">
         <Brand />
         <div className="topbar-right">
+          <GameSelector />
           <span className="region-pill">EU · Competitive</span>
           <button
             type="button"

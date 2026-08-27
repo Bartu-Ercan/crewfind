@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Brand } from "@/frontend/components/brand";
+import { GameSelector } from "@/frontend/components/game-selector";
 
 type GameComingSoonProps = {
   gameName: string;
@@ -10,6 +11,7 @@ export function GameComingSoon({ gameName }: GameComingSoonProps) {
     <main className="app-shell">
       <header className="topbar">
         <Brand />
+        <GameSelector />
       </header>
       <section className="home-section">
         <div className="hero-copy">
