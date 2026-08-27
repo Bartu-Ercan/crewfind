@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { QUEUE_TYPES, REGIONS } from "@/shared/queue-filters";
+import { QUEUE_TYPES, VALORANT_SERVERS } from "@/shared/queue-filters";
 
 export const searchSchema = z
   .object({
@@ -13,7 +13,16 @@ export const searchSchema = z
     minRank: z.number().int().min(0).max(24),
     maxRank: z.number().int().min(0).max(24).default(24),
     partySize: z.number().int().min(1).max(4),
-    region: z.enum(REGIONS.map((option) => option.value) as ["eu", "tr", "na"]),
+    server: z.enum(
+      VALORANT_SERVERS.map((option) => option.value) as [
+        "frankfurt",
+        "paris",
+        "london",
+        "istanbul",
+        "stockholm",
+        "warsaw",
+      ],
+    ),
     queueType: z.enum(QUEUE_TYPES.map((option) => option.value) as ["competitive", "unrated"]),
   })
   .refine((data) => data.minRank <= data.maxRank, {

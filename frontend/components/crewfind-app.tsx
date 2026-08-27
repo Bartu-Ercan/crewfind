@@ -37,7 +37,7 @@ export function CrewFindApp() {
     minRank: 6,
     maxRank: RANKS.length - 1,
     partySize: 1,
-    region: "eu",
+    server: "frankfurt",
     queueType: "competitive",
   });
   const [riotName, setRiotName] = useState("");
@@ -242,7 +242,7 @@ export function CrewFindApp() {
         p_party_size: form.partySize,
         p_min_rank: form.minRank,
         p_max_rank: searchPayload.maxRank,
-        p_region: form.region,
+        p_server: form.server,
         p_queue_type: form.queueType,
       });
       if (queueError) throw queueError;
@@ -356,7 +356,7 @@ export function CrewFindApp() {
         <div className="topbar-right">
           <GameSelector />
           <QueueSelector
-            region={form.region}
+            server={form.server}
             queueType={form.queueType}
             onChange={(filters) => setForm((current) => ({ ...current, ...filters }))}
           />
@@ -485,7 +485,7 @@ export function CrewFindApp() {
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
               <div><span>Aranan</span><strong>{5 - form.partySize} oyuncu</strong></div>
-              <div><span>Bölge</span><strong>{queueLabel(form.region, form.queueType)}</strong></div>
+              <div><span>Sunucu</span><strong>{queueLabel(form.server, form.queueType)}</strong></div>
             </div>
             <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
           </div>

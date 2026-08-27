@@ -12,7 +12,7 @@ const entry = (
   rank,
   minRank: 8,
   maxRank: 12,
-  region: "eu",
+  server: "frankfurt",
   queueType: "competitive",
   createdAt,
 });
@@ -24,8 +24,8 @@ describe("matchmaking", () => {
     expect(entriesAreCompatible(a, b)).toBe(false);
   });
 
-  it("yalnızca aynı bölge ve kuyruktaki oyuncuları eşleştirir", () => {
-    expect(entriesAreCompatible(entry("eu", 1), { ...entry("tr", 1), region: "tr" })).toBe(false);
+  it("yalnızca aynı sunucu ve kuyruktaki oyuncuları eşleştirir", () => {
+    expect(entriesAreCompatible(entry("frankfurt", 1), { ...entry("istanbul", 1), server: "istanbul" })).toBe(false);
     expect(entriesAreCompatible(entry("competitive", 1), { ...entry("unrated", 1), queueType: "unrated" })).toBe(false);
   });
 

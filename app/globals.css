@@ -240,6 +240,24 @@ h3,
   white-space: nowrap;
 }
 
+.queue-selector-trigger-label {
+  display: grid;
+  gap: 1px;
+  line-height: 1.05;
+  text-align: left;
+}
+
+.queue-selector-trigger-label strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.queue-selector-trigger-label small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
 .queue-selector-trigger .open {
   transform: rotate(180deg);
 }
@@ -253,8 +271,8 @@ h3,
   z-index: 30;
   top: calc(100% + 8px);
   right: 0;
-  width: 240px;
-  padding: 12px;
+  width: 304px;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
@@ -276,24 +294,57 @@ h3,
   text-transform: uppercase;
 }
 
-.queue-selector-option {
-  width: 100%;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 10px;
-  border-radius: 10px;
+.queue-server-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.queue-server-option,
+.queue-mode-option {
+  border: 1px solid transparent;
   color: var(--text-secondary);
   font-size: 12px;
   font-weight: 600;
+}
+
+.queue-server-option {
+  min-height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 9px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg) 64%, var(--surface));
   text-align: left;
 }
 
-.queue-selector-option:hover,
-.queue-selector-option.selected {
+.queue-server-option:hover,
+.queue-server-option.selected {
   color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
   background: var(--accent-soft);
+}
+
+.queue-mode-picker {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg) 64%, var(--surface));
+}
+
+.queue-mode-option {
+  min-height: 34px;
+  border-radius: 999px;
+}
+
+.queue-mode-option:hover,
+.queue-mode-option.selected {
+  color: var(--on-accent);
+  background: var(--accent);
 }
 
 .theme-toggle {
@@ -1151,7 +1202,7 @@ h3,
     padding: 0;
   }
 
-  .queue-selector-trigger > span,
+  .queue-selector-trigger-label,
   .queue-selector-trigger > svg:last-child {
     display: none;
   }

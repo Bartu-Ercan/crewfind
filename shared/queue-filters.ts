@@ -1,19 +1,22 @@
-export const REGIONS = [
-  { value: "eu", label: "Europe" },
-  { value: "tr", label: "Türkiye" },
-  { value: "na", label: "North America" },
+export const VALORANT_SERVERS = [
+  { value: "frankfurt", label: "Frankfurt" },
+  { value: "paris", label: "Paris" },
+  { value: "london", label: "London" },
+  { value: "istanbul", label: "İstanbul" },
+  { value: "stockholm", label: "Stockholm" },
+  { value: "warsaw", label: "Warsaw" },
 ] as const;
 
 export const QUEUE_TYPES = [
-  { value: "competitive", label: "Competitive" },
-  { value: "unrated", label: "Unrated" },
+  { value: "competitive", label: "Rekabetçi" },
+  { value: "unrated", label: "Derecesiz" },
 ] as const;
 
-export type Region = (typeof REGIONS)[number]["value"];
+export type ValorantServer = (typeof VALORANT_SERVERS)[number]["value"];
 export type QueueType = (typeof QUEUE_TYPES)[number]["value"];
 
-export function queueLabel(region: Region, queueType: QueueType) {
-  const regionLabel = REGIONS.find((option) => option.value === region)?.label ?? "Europe";
-  const queueLabel = QUEUE_TYPES.find((option) => option.value === queueType)?.label ?? "Competitive";
-  return `${regionLabel} · ${queueLabel}`;
+export function queueLabel(server: ValorantServer, queueType: QueueType) {
+  const serverLabel = VALORANT_SERVERS.find((option) => option.value === server)?.label ?? "Frankfurt";
+  const queueTypeLabel = QUEUE_TYPES.find((option) => option.value === queueType)?.label ?? "Rekabetçi";
+  return `${serverLabel} · ${queueTypeLabel}`;
 }
