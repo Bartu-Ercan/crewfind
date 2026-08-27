@@ -16,7 +16,7 @@ export function entriesAreCompatible(a: MatchEntry, b: MatchEntry) {
   );
 }
 
-export function findBestFive(entries: MatchEntry[]) {
+export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
   const ordered = [...entries].sort(
     (a, b) =>
       Number(b.partySize > 1) - Number(a.partySize > 1) ||
