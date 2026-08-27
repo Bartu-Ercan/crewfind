@@ -127,6 +127,14 @@ Kademe renkleri:
 
 - Kutusuz ve viewport ortasındadır.
 - Dairesel ikon rozeti, durum etiketi ve süre/aranan/bölge istatistikleri düz dizilir.
+- Sunucu istatistiğinde kuyruk türü tekrarlanmaz; yalnızca seçilen sunucu adı gösterilir.
+- Dairesel ikon rozetinin çevresinde ince, gölgesiz ve sürekli dönen bir arama halkası bulunur.
+
+## Turnstile Davranışı
+
+- Turnstile yalnızca yeni anonim oturum gerektiğinde yüklenir; mevcut oturumu olan kullanıcıya gösterilmez.
+- Widget `interaction-only` görünümünü kullanır ve yalnızca Cloudflare etkileşim istediğinde görünür.
+- Yeni oturum gerektiğinde doğrulama tokenı oluşmadan arama butonu aktif olmaz.
 
 ## Lobi Davranışı
 

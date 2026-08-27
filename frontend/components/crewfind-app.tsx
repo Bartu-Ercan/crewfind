@@ -26,7 +26,7 @@ import { DEMO_NAMES } from "@/frontend/config/demo";
 import { readableError } from "@/frontend/lib/error-messages";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import { RANKS, rankName } from "@/shared/ranks";
-import { queueLabel } from "@/shared/queue-filters";
+import { serverLabel } from "@/shared/queue-filters";
 import { searchSchema, type SearchInput } from "@/shared/validation";
 
 export function CrewFindApp() {
@@ -58,6 +58,8 @@ export function CrewFindApp() {
   const [copied, setCopied] = useState("");
   const [busy, setBusy] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
+  const [needsCaptcha, setNeedsCaptcha] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -83,6 +85,25 @@ export function CrewFindApp() {
     setTheme(savedTheme);
     applyTheme(savedTheme);
   }, [applyTheme]);
+
+  useEffect(() => {
+    if (demoMode || !turnstileEnabled) {
+      setNeedsCaptcha(false);
+      setAuthReady(true);
+      return;
+    }
+
+    let active = true;
+    void getSupabaseBrowserClient().auth.getSession().then(({ data }) => {
+      if (!active) return;
+      setNeedsCaptcha(!data.session);
+      setAuthReady(true);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [demoMode, turnstileEnabled]);
 
   const cleanupTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -235,6 +256,7 @@ export function CrewFindApp() {
       const client = getSupabaseBrowserClient();
       const { data: sessionData } = await client.auth.getSession();
       if (!sessionData.session) {
+        setNeedsCaptcha(true);
         if (turnstileEnabled && !captchaToken) {
           throw new Error("Güvenlik doğrulamasını tamamla.");
         }
@@ -242,6 +264,8 @@ export function CrewFindApp() {
           turnstileEnabled ? { options: { captchaToken } } : undefined,
         );
         if (authError) throw authError;
+        setNeedsCaptcha(false);
+        setCaptchaToken("");
       }
       const { data, error: queueError } = await client.rpc("enqueue_and_attempt_match", {
         p_riot_id: searchPayload.riotId.trim(),
@@ -516,18 +540,22 @@ export function CrewFindApp() {
               </div>
             </div>
 
-            {!demoMode && turnstileEnabled && turnstileSiteKey && (
+            {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha && (
               <div className="turnstile-wrap">
                 <Turnstile
                   siteKey={turnstileSiteKey}
                   onSuccess={setCaptchaToken}
                   onExpire={() => setCaptchaToken("")}
-                  options={{ theme, size: "flexible" }}
+                  onError={() => setError("Güvenlik doğrulaması yüklenemedi. Sayfayı yenile.")}
+                  options={{ appearance: "interaction-only", theme, size: "flexible" }}
                 />
               </div>
             )}
             {error && <div className="error-message"><X size={15} /> {error}</div>}
-            <button className="primary-button" disabled={busy}>
+            <button
+              className="primary-button"
+              disabled={busy || !authReady || (needsCaptcha && !captchaToken)}
+            >
               {busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}
               {busy ? "Aranıyor..." : "Oyuncu ara"}
             </button>
@@ -545,7 +573,7 @@ export function CrewFindApp() {
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
               <div><span>Aranan</span><strong>{form.targetSize - form.partySize} oyuncu</strong></div>
-              <div><span>Sunucu</span><strong>{queueLabel(form.server, form.queueType)}</strong></div>
+              <div><span>Sunucu</span><strong>{serverLabel(form.server)}</strong></div>
             </div>
             <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
           </div>

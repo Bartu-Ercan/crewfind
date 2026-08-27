@@ -779,11 +779,46 @@ h3,
 }
 
 .matchmaking-badge {
+  position: relative;
   width: 88px;
   height: 88px;
   border-radius: 999px;
   color: var(--accent);
   background: var(--accent-soft);
+}
+
+.matchmaking-badge::after {
+  position: absolute;
+  inset: -7px;
+  content: "";
+  border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: matchmaking-orbit 1.8s linear infinite;
+}
+
+.matchmaking-badge svg {
+  animation: matchmaking-breathe 1.8s ease-in-out infinite;
+}
+
+@keyframes matchmaking-orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes matchmaking-breathe {
+  50% {
+    opacity: 0.72;
+    transform: scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .matchmaking-badge::after,
+  .matchmaking-badge svg {
+    animation: none;
+  }
 }
 
 .step-kicker,
