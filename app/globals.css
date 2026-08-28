@@ -98,7 +98,6 @@ input {
 h1,
 h2,
 h3,
-.brand,
 .step-kicker,
 .eyebrow {
   font-family: var(--font-heading), Arial, sans-serif;
@@ -128,16 +127,17 @@ h3,
   align-items: center;
   isolation: isolate;
   color: var(--text-primary);
-  font-size: 18px;
+  font-family: var(--font-body), Arial, sans-serif;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: 0;
+  letter-spacing: -0.04em;
 }
 
 .brand-highlight {
   position: absolute;
   z-index: -1;
   left: 0;
-  width: 52px;
+  width: 58px;
   height: 30px;
   border-radius: 999px;
   background: var(--accent);
@@ -146,7 +146,7 @@ h3,
 
 .brand-find .brand-highlight {
   width: 44px;
-  transform: translateX(52px);
+  transform: translateX(58px);
 }
 
 .brand-word {
@@ -157,7 +157,7 @@ h3,
 }
 
 .brand-word-crew {
-  width: 52px;
+  width: 58px;
 }
 
 .brand-word-find {
@@ -363,6 +363,10 @@ h3,
 
 .queue-mode-option {
   min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   border-radius: 999px;
 }
 
@@ -856,6 +860,27 @@ h3,
   line-height: 1.5;
 }
 
+.search-notice {
+  width: min(460px, 100%);
+  min-height: 40px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  border-radius: 16px;
+  background: var(--accent-soft);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.search-notice svg {
+  flex: 0 0 auto;
+  color: var(--accent);
+}
+
 .search-stats {
   width: min(460px, 100%);
   display: grid;
@@ -1042,6 +1067,12 @@ h3,
   border-radius: 999px;
 }
 
+.you-pill.ready {
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 38%, var(--border));
+  background: color-mix(in srgb, var(--success) 9%, transparent);
+}
+
 .proposal-note {
   margin: 16px 0 0;
   text-align: center;
@@ -1063,6 +1094,18 @@ h3,
 
 .accept-button:hover:not(:disabled) {
   filter: brightness(1.08);
+}
+
+.accept-button.confirmed {
+  border: 1px solid color-mix(in srgb, var(--success) 34%, var(--border));
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
+  color: var(--success);
+  cursor: default;
+  opacity: 1;
+}
+
+.reject-button:disabled {
+  opacity: 0.42;
 }
 
 .lobby-layout {

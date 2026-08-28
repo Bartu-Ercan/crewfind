@@ -14,17 +14,25 @@ export const searchSchema = z
     maxRank: z.number().int().min(0).max(24).default(24),
     partySize: z.number().int().min(1).max(4),
     targetSize: z.number().int().min(2).max(5),
-    server: z.enum(
-      VALORANT_SERVERS.map((option) => option.value) as [
-        "frankfurt",
-        "paris",
-        "london",
-        "istanbul",
-        "stockholm",
-        "warsaw",
-      ],
-    ),
-    queueType: z.enum(QUEUE_TYPES.map((option) => option.value) as ["competitive", "unrated"]),
+    servers: z
+      .array(
+        z.enum(
+          VALORANT_SERVERS.map((option) => option.value) as [
+            "frankfurt",
+            "paris",
+            "london",
+            "istanbul",
+            "stockholm",
+            "warsaw",
+          ],
+        ),
+      )
+      .min(1, "En az bir sunucu seç.")
+      .max(VALORANT_SERVERS.length),
+    queueTypes: z
+      .array(z.enum(QUEUE_TYPES.map((option) => option.value) as ["competitive", "unrated"]))
+      .min(1, "En az bir kuyruk seç.")
+      .max(QUEUE_TYPES.length),
   })
   .refine((data) => data.minRank <= data.maxRank, {
     message: "Minimum rank maksimumdan büyük olamaz.",

@@ -19,8 +19,20 @@ export function serverLabel(server: ValorantServer) {
   return VALORANT_SERVERS.find((option) => option.value === server)?.label ?? "Frankfurt";
 }
 
-export function queueLabel(server: ValorantServer, queueType: QueueType) {
-  const selectedServerLabel = serverLabel(server);
-  const queueTypeLabel = QUEUE_TYPES.find((option) => option.value === queueType)?.label ?? "Rekabetçi";
-  return `${selectedServerLabel} · ${queueTypeLabel}`;
+export function queueTypeLabel(queueType: QueueType) {
+  return QUEUE_TYPES.find((option) => option.value === queueType)?.label ?? "Rekabetçi";
+}
+
+export function serverSelectionLabel(servers: ValorantServer[]) {
+  const labels = servers.map(serverLabel);
+  return labels.length <= 2 ? labels.join(" + ") : `${labels.length} sunucu`;
+}
+
+export function queueSelectionLabel(queueTypes: QueueType[]) {
+  const labels = queueTypes.map(queueTypeLabel);
+  return labels.length === 1 ? labels[0] : "Tüm kuyruklar";
+}
+
+export function queueLabel(servers: ValorantServer[], queueTypes: QueueType[]) {
+  return `${serverSelectionLabel(servers)} · ${queueSelectionLabel(queueTypes)}`;
 }

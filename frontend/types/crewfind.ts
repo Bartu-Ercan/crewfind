@@ -23,4 +23,5 @@ export type StatusPayload = {
   lobbyId?: string;
   expiresAt?: string;
   members?: Member[];
+  notice?: string;
 };

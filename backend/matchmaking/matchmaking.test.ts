@@ -13,8 +13,8 @@ const entry = (
   rank,
   minRank: 8,
   maxRank: 12,
-  server: "frankfurt",
-  queueType: "competitive",
+  servers: ["frankfurt"],
+  queueTypes: ["competitive"],
   createdAt,
 });
 
@@ -26,8 +26,45 @@ describe("matchmaking", () => {
   });
 
   it("yalnızca aynı sunucu ve kuyruktaki oyuncuları eşleştirir", () => {
-    expect(entriesAreCompatible(entry("frankfurt", 1), { ...entry("istanbul", 1), server: "istanbul" })).toBe(false);
-    expect(entriesAreCompatible(entry("competitive", 1), { ...entry("unrated", 1), queueType: "unrated" })).toBe(false);
+    expect(
+      entriesAreCompatible(entry("frankfurt", 1), {
+        ...entry("istanbul", 1),
+        servers: ["istanbul"],
+      }),
+    ).toBe(false);
+    expect(
+      entriesAreCompatible(entry("competitive", 1), {
+        ...entry("unrated", 1),
+        queueTypes: ["unrated"],
+      }),
+    ).toBe(false);
+  });
+
+  it("ortak seçenek içeren çoklu filtreleri eşleştirir", () => {
+    const flexible = {
+      ...entry("flexible", 1),
+      servers: ["istanbul", "frankfurt"],
+      queueTypes: ["competitive", "unrated"],
+    };
+    const istanbul = { ...entry("istanbul", 4), servers: ["istanbul"] };
+
+    expect(entriesAreCompatible(flexible, istanbul)).toBe(true);
+    expect(findBestFive([flexible, istanbul])?.map((item) => item.id)).toEqual([
+      "istanbul",
+      "flexible",
+    ]);
+  });
+
+  it("grubun tamamında ortak sunucu yoksa eşleştirme yapmaz", () => {
+    const flexible = {
+      ...entry("flexible", 1),
+      targetSize: 3,
+      servers: ["istanbul", "frankfurt"],
+    };
+    const istanbul = { ...entry("istanbul", 1), targetSize: 3, servers: ["istanbul"] };
+    const frankfurt = { ...entry("frankfurt", 1), targetSize: 3, servers: ["frankfurt"] };
+
+    expect(findBestFive([flexible, istanbul, frankfurt])).toBeNull();
   });
 
   it("duo aramasını tam takım aramasından ayırır", () => {

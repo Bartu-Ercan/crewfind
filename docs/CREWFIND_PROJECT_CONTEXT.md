@@ -127,7 +127,7 @@ Kademe renkleri:
 
 - Kutusuz ve viewport ortasındadır.
 - Dairesel ikon rozeti, durum etiketi ve süre/aranan/bölge istatistikleri düz dizilir.
-- Sunucu istatistiğinde kuyruk türü tekrarlanmaz; yalnızca seçilen sunucu adı gösterilir.
+- Sunucu istatistiğinde kuyruk türü tekrarlanmaz; yalnızca seçilen sunucu veya sunucu özeti gösterilir.
 - Dairesel ikon rozetinin çevresinde ince, gölgesiz ve sürekli dönen bir arama halkası bulunur.
 
 ## Turnstile Davranışı
@@ -139,8 +139,22 @@ Kademe renkleri:
 ## Lobi Davranışı
 
 - Biri lobiden çıkınca diğerlerine anlık `X lobiden ayrıldı` bildirimi gösterilir.
-- Lobi tamamen dağılmaz.
-- Eksik kişi sayısı otomatik yeni filtre olur ve kalanlar eksik oyuncu arama moduna döner.
+- Eski lobi kapanır; ayrılan oyuncunun araması iptal edilir.
+- Kalan oyuncular mevcut sunucu, kuyruk, rank ve takım hedeflerini koruyarak otomatik yeniden aramaya döner.
+- Kalan toplam oyuncu sayısı nedeniyle sistem yalnızca eksik kontenjanı tamamlayacak eşleşmeleri kabul eder.
+
+## Sunucu ve Kuyruk Çoklu Seçimi
+
+- Valorant sunucuları çoklu seçilebilir; en az bir sunucu her zaman seçili kalır.
+- Rekabetçi ve Derecesiz kuyrukları birlikte seçilebilir; en az bir kuyruk her zaman seçili kalır.
+- Seçim yapınca dropdown kapanmaz; yalnızca dışarı tıklayınca veya tetikleyiciye yeniden basınca kapanır.
+- Eşleşen bütün grupların en az bir ortak sunucusu ve bir ortak kuyruk türü bulunmalıdır.
+
+## Eşleşme Onayı
+
+- Kullanıcı `Kabul et` dedikten sonra kendi durumu açıkça `Hazır` görünür.
+- Onaylanan kabul kararı değiştirilemez; kabul ve ret butonları tekrar tıklanamaz.
+- Sunucu aynı kullanıcıdan gelen yinelenen kabul veya ret çağrılarını etkisiz kabul eder.
 
 ## Logo Mikro Animasyonu
 

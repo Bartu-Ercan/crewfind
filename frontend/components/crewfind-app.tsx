@@ -8,6 +8,7 @@ import {
   LogOut,
   MessageCircle,
   Moon,
+  Info,
   Search,
   Send,
   Sun,
@@ -26,7 +27,7 @@ import { DEMO_NAMES } from "@/frontend/config/demo";
 import { readableError } from "@/frontend/lib/error-messages";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import { RANKS, rankName } from "@/shared/ranks";
-import { serverLabel } from "@/shared/queue-filters";
+import { serverSelectionLabel } from "@/shared/queue-filters";
 import { searchSchema, type SearchInput } from "@/shared/validation";
 
 export function CrewFindApp() {
@@ -38,8 +39,8 @@ export function CrewFindApp() {
     maxRank: RANKS.length - 1,
     partySize: 1,
     targetSize: 5,
-    server: "istanbul",
-    queueType: "competitive",
+    servers: ["istanbul"],
+    queueTypes: ["competitive"],
   });
   const [riotName, setRiotName] = useState("");
   const [riotTag, setRiotTag] = useState("TR1");
@@ -60,6 +61,7 @@ export function CrewFindApp() {
   const [captchaToken, setCaptchaToken] = useState("");
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
   const [authReady, setAuthReady] = useState(false);
+  const [notice, setNotice] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -160,6 +162,7 @@ export function CrewFindApp() {
   }, [form, riotId]);
 
   const applyStatus = useCallback((payload: StatusPayload) => {
+    if (payload.notice) setNotice(payload.notice);
     if (payload.status === "searching") setView("searching");
     if (payload.status === "proposed") {
       setProposalId(payload.proposalId ?? null);
@@ -183,7 +186,7 @@ export function CrewFindApp() {
   }, []);
 
   useEffect(() => {
-    if (demoMode || !["searching", "proposal"].includes(view)) return;
+    if (demoMode || !["searching", "proposal", "lobby"].includes(view)) return;
     const poll = async () => {
       const client = getSupabaseBrowserClient();
       const { data, error: statusError } = await client.rpc("get_my_status");
@@ -221,6 +224,7 @@ export function CrewFindApp() {
   async function startSearch(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setNotice("");
     const searchPayload = { ...form, riotId, maxRank: RANKS.length - 1 };
     const parsed = searchSchema.safeParse(searchPayload);
     if (!parsed.success) {
@@ -273,8 +277,8 @@ export function CrewFindApp() {
         p_party_size: form.partySize,
         p_min_rank: form.minRank,
         p_max_rank: searchPayload.maxRank,
-        p_server: form.server,
-        p_queue_type: form.queueType,
+        p_servers: form.servers,
+        p_queue_types: form.queueTypes,
         p_target_size: form.targetSize,
       });
       if (queueError) throw queueError;
@@ -337,6 +341,7 @@ export function CrewFindApp() {
     }
     setView("home");
     setLogoHighlight("crew");
+    setNotice("");
     setMembers([]);
     setMessages([]);
     setProposalId(null);
@@ -383,6 +388,7 @@ export function CrewFindApp() {
     () => members.find((member) => member.isMe)?.playerId ?? "me",
     [members],
   );
+  const acceptedByMe = members.some((member) => member.isMe && member.accepted === true);
 
   return (
     <main className="app-shell bg-[var(--bg)] text-[var(--text-primary)] dark:bg-[var(--bg)] dark:text-[var(--text-primary)]">
@@ -397,8 +403,8 @@ export function CrewFindApp() {
             }}
           />
           <QueueSelector
-            server={form.server}
-            queueType={form.queueType}
+            servers={form.servers}
+            queueTypes={form.queueTypes}
             onChange={(filters) => setForm((current) => ({ ...current, ...filters }))}
             open={openTopbarSelect === "queue"}
             onOpenChange={(open) => {
@@ -570,10 +576,16 @@ export function CrewFindApp() {
             <span className="step-kicker">Eşleştirme sürüyor</span>
             <h2>Takım arkadaşların aranıyor</h2>
             <p>{rankName(form.minRank)} ve üzerindeki uygun oyunculara bakıyoruz.</p>
+            {notice ? (
+              <div className="search-notice" role="status" aria-live="polite">
+                <Info size={15} aria-hidden="true" />
+                {notice}
+              </div>
+            ) : null}
             <div className="search-stats">
               <div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div>
               <div><span>Aranan</span><strong>{form.targetSize - form.partySize} oyuncu</strong></div>
-              <div><span>Sunucu</span><strong>{serverLabel(form.server)}</strong></div>
+              <div><span>Sunucu</span><strong>{serverSelectionLabel(form.servers)}</strong></div>
             </div>
             <button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button>
           </div>
@@ -600,7 +612,10 @@ export function CrewFindApp() {
                     <span>{rankName(member.rank)} · {member.partySize === 1 ? "Solo" : `${member.partySize} kişilik grup`}</span>
                   </div>
                   {member.isMe ? (
-                    <span className="you-pill">Sen</span>
+                    <span className={`you-pill ${member.accepted ? "ready" : ""}`}>
+                      {member.accepted ? <Check size={14} aria-hidden="true" /> : null}
+                      {member.accepted ? "Sen · Hazır" : "Sen"}
+                    </span>
                   ) : member.accepted ? (
                     <span className="accepted"><Check size={15} /> Hazır</span>
                   ) : (
@@ -612,9 +627,14 @@ export function CrewFindApp() {
             <p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>
             {error && <div className="error-message"><X size={15} /> {error}</div>}
             <div className="proposal-actions">
-              <button className="reject-button" disabled={busy} onClick={() => respond(false)}><X size={18} /> Reddet</button>
-              <button className="accept-button" disabled={busy} onClick={() => respond(true)}>
-                {busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />} Kabul et
+              <button className="reject-button" disabled={busy || acceptedByMe} onClick={() => respond(false)}><X size={18} /> Reddet</button>
+              <button
+                className={`accept-button ${acceptedByMe ? "confirmed" : ""}`}
+                disabled={busy || acceptedByMe}
+                onClick={() => respond(true)}
+              >
+                {busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}
+                {acceptedByMe ? "Onaylandı" : "Kabul et"}
               </button>
             </div>
           </div>

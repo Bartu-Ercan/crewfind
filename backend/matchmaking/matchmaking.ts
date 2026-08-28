@@ -5,8 +5,8 @@ export type MatchEntry = {
   rank: number;
   minRank: number;
   maxRank: number;
-  server: string;
-  queueType: string;
+  servers: string[];
+  queueTypes: string[];
   createdAt: number;
 };
 
@@ -16,8 +16,8 @@ export function entriesAreCompatible(a: MatchEntry, b: MatchEntry) {
     a.rank <= b.maxRank &&
     b.rank >= a.minRank &&
     b.rank <= a.maxRank &&
-    a.server === b.server &&
-    a.queueType === b.queueType &&
+    a.servers.some((server) => b.servers.includes(server)) &&
+    a.queueTypes.some((queueType) => b.queueTypes.includes(queueType)) &&
     a.targetSize === b.targetSize
   );
 }
@@ -32,7 +32,13 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
 
   let best: MatchEntry[] | null = null;
 
-  function walk(index: number, selected: MatchEntry[], total: number) {
+  function walk(
+    index: number,
+    selected: MatchEntry[],
+    total: number,
+    commonServers: string[],
+    commonQueueTypes: string[],
+  ) {
     const targetSize = selected[0]?.targetSize ?? 5;
     if (total === targetSize) {
       best = [...selected];
@@ -42,8 +48,27 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
 
     for (let i = index; i < ordered.length; i += 1) {
       const candidate = ordered[i];
-      if (selected.every((entry) => entriesAreCompatible(entry, candidate))) {
-        if (walk(i + 1, [...selected, candidate], total + candidate.partySize)) {
+      const nextServers = selected.length
+        ? commonServers.filter((server) => candidate.servers.includes(server))
+        : candidate.servers;
+      const nextQueueTypes = selected.length
+        ? commonQueueTypes.filter((queueType) => candidate.queueTypes.includes(queueType))
+        : candidate.queueTypes;
+
+      if (
+        nextServers.length > 0 &&
+        nextQueueTypes.length > 0 &&
+        selected.every((entry) => entriesAreCompatible(entry, candidate))
+      ) {
+        if (
+          walk(
+            i + 1,
+            [...selected, candidate],
+            total + candidate.partySize,
+            nextServers,
+            nextQueueTypes,
+          )
+        ) {
           return true;
         }
       }
@@ -51,6 +76,6 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
     return false;
   }
 
-  walk(0, [], 0);
+  walk(0, [], 0, [], []);
   return best;
 }
