@@ -13,7 +13,10 @@ describe("oyun arama doğrulaması", () => {
       ...createInitialSearchInput("league-of-legends"),
       displayName: "Oyuncu#TR1",
       contactValue: "Oyuncu#TR1",
+      rankSystem: "lol-flex",
+      queueTypes: ["flex"],
       partySize: 2,
+      targetSize: 5,
       roles: ["mid", "mid"],
     };
     expect(searchSchema.safeParse(input).success).toBe(false);
@@ -24,6 +27,19 @@ describe("oyun arama doğrulaması", () => {
     const input = { ...createInitialSearchInput("cs2"), displayName: "Steam Oyuncu", contactValue: "1234" };
     expect(searchSchema.safeParse(input).success).toBe(false);
     expect(searchSchema.safeParse({ ...input, contactValue: "12345678" }).success).toBe(true);
+  });
+
+  it("CS2'de Steam adı veya arkadaş kodundan birini yeterli kabul eder", () => {
+    const input = createInitialSearchInput("cs2");
+    expect(searchSchema.safeParse({ ...input, displayName: "Steam Oyuncu" }).success).toBe(true);
+    expect(searchSchema.safeParse({ ...input, contactValue: "12345678" }).success).toBe(true);
+    expect(searchSchema.safeParse(input).success).toBe(false);
+  });
+
+  it("LoL Solo/Duo aramasını 1+1 olarak sabitler", () => {
+    const input = { ...createInitialSearchInput("league-of-legends"), displayName: "Oyuncu#TR1", contactValue: "Oyuncu#TR1" };
+    expect(searchSchema.safeParse(input).success).toBe(true);
+    expect(searchSchema.safeParse({ ...input, targetSize: 5 }).success).toBe(false);
   });
 
   it("Competitive modunda en az bir harita ister", () => {

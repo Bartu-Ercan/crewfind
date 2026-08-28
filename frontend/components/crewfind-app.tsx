@@ -12,28 +12,28 @@ import {
   Moon,
   Search,
   Send,
-  Shield,
   Sun,
   User,
   Users,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type CSSProperties, type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
 import { Brand } from "@/frontend/components/brand";
 import { GameSelector } from "@/frontend/components/game-selector";
 import { QueueSelector } from "@/frontend/components/queue-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
+import { RatingSelect } from "@/frontend/components/rating-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { readableError } from "@/frontend/lib/error-messages";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import {
   CS2_MAPS,
+  CS2_RATING_BANDS,
   GAME_CONFIGS,
   GAME_ROUTES,
   LOL_ROLES,
-  cs2RatingColor,
   optionLabel,
   rankNameFor,
   rankSystemFor,
@@ -50,11 +50,6 @@ function normalizeMembers(members: Member[] | undefined) {
     ...member,
     displayName: member.displayName ?? member.riotId ?? "Oyuncu",
   }));
-}
-
-function clampNumber(value: string, min: number, max: number) {
-  const number = Number(value.replace(/\D/g, ""));
-  return Math.min(max, Math.max(min, Number.isFinite(number) ? number : min));
 }
 
 export function CrewFindApp({ game }: CrewFindAppProps) {
@@ -89,7 +84,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const selectedQueue = form.queueTypes[0] ?? config.defaultQueue;
   const rankOptions = useMemo(() => ranksFor(game, selectedQueue), [game, selectedQueue]);
   const displayName = game === "cs2"
-    ? identityName.trim()
+    ? identityName.trim() || identityDetail.trim()
     : `${identityName.trim()}#${identityDetail.trim()}`;
   const contactValue = game === "cs2" ? identityDetail.trim() : displayName;
   const demoMode =
@@ -272,7 +267,13 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
         return { ...current, ...filters, rankSystem: nextRankSystem, rank: 7, minRank: 4, maxRank: 17 };
       }
       if (game === "cs2") {
-        return { ...current, ...filters, rankSystem: nextRankSystem, rank: 10_000, minRank: 5_000, maxRank: 50_000 };
+        return { ...current, ...filters, rankSystem: nextRankSystem, rank: 9_500, minRank: 5_000, maxRank: 50_000 };
+      }
+      if (game === "league-of-legends" && nextQueue === "solo-duo") {
+        return { ...current, ...filters, rankSystem: nextRankSystem, partySize: 1, targetSize: 2, roles: current.roles.slice(0, 1) };
+      }
+      if (game === "league-of-legends") {
+        return { ...current, ...filters, rankSystem: nextRankSystem, targetSize: 5 };
       }
       return { ...current, ...filters, rankSystem: nextRankSystem };
     });
@@ -284,7 +285,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       partySize,
       targetSize: 5,
       roles: game === "league-of-legends"
-        ? LOL_ROLES.slice(0, partySize).map((role) => role.value)
+        ? current.roles.slice(0, partySize)
         : current.roles,
     }));
   }
@@ -399,7 +400,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   }
 
   async function copyContact(member: Member) {
-    const value = game === "cs2" ? member.contactValue : member.displayName;
+    const value = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName;
     if (!value) return;
     await navigator.clipboard.writeText(value);
     setCopied(value);
@@ -440,7 +441,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {game === "cs2" ? (
               <div className="form-row identity-row">
                 <label className="field"><span>Steam görünen adı</span><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.slice(0, 32))} placeholder="Oyuncu adı" autoComplete="off" /></div></label>
-                <label className="field"><span>Arkadaş kodu</span><div className="riot-input"><Users size={15} /><input inputMode="numeric" value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="12345678" autoComplete="off" /></div></label>
+                <label className="field"><span>Arkadaş kodu <small>(isteğe bağlı)</small></span><div className="riot-input"><Users size={15} /><input inputMode="numeric" value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="12345678" autoComplete="off" /></div></label>
               </div>
             ) : (
               <div className="field"><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.replace(/#/g, "").slice(0, 16))} placeholder="OyuncuAdı" autoComplete="off" aria-label="Riot kullanıcı adı" /><div className="riot-tag"><span>#</span><input value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5))} placeholder="TR1" aria-label="Riot etiketi" autoComplete="off" /></div></div></div>
@@ -448,11 +449,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
 
             {game === "cs2" && selectedQueue === "premier" ? (
               <div className="form-row rating-row">
-                {[{ key: "rank", label: form.partySize > 1 ? "Grubun en yüksek ratingi" : "CS Rating" }, { key: "minRank", label: "Min. rating" }].map(({ key, label }) => {
-                  const value = form[key as "rank" | "minRank"];
-                  const color = cs2RatingColor(value);
-                  return <label className="field" key={key}><span>{label}</span><div className="rating-input" style={{ "--rating-color": color } as CSSProperties}><span className="rank-badge" style={{ backgroundColor: `${color}33`, color }}><Shield size={13} /></span><input inputMode="numeric" value={new Intl.NumberFormat("tr-TR").format(value)} onChange={(event) => { const next = clampNumber(event.target.value, 1_000, 50_000); setForm((current) => key === "rank" ? { ...current, rank: next, minRank: Math.min(current.minRank, next) } : { ...current, minRank: Math.min(next, current.rank) }); }} /><small>CS Rating</small></div></label>;
-                })}
+                <RatingSelect id="rating" label={form.partySize > 1 ? "Grubun en yüksek ratingi" : "CS Rating"} value={form.rank} bands={CS2_RATING_BANDS} open={openRankSelect === "rating"} onOpenChange={(id) => { setOpenRankSelect(id); if (id) setOpenTopbarSelect(null); }} onChange={(rank) => setForm((current) => ({ ...current, rank, minRank: Math.min(current.minRank, rank), maxRank: 50_000 }))} />
+                <RatingSelect id="min-rating" label="Min. rating" value={form.minRank} bands={CS2_RATING_BANDS} max={form.rank} open={openRankSelect === "min-rating"} onOpenChange={(id) => { setOpenRankSelect(id); if (id) setOpenTopbarSelect(null); }} onChange={(minRank) => setForm((current) => ({ ...current, minRank, maxRank: 50_000 }))} />
               </div>
             ) : (
               <div className="form-row">
@@ -461,13 +459,13 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
               </div>
             )}
 
-            <div className="field"><span>Kaç kişisiniz?</span><div className="party-picker">{[1, 2, 3, 4].map((size) => <button type="button" key={size} className={form.partySize === size ? "selected" : ""} onClick={() => updatePartySize(size)}>{form.partySize === size ? `${size} kişi` : size}</button>)}</div></div>
+            {game === "league-of-legends" && selectedQueue === "solo-duo" ? <p className="solo-queue-note">Solo/Duo için 1 takım arkadaşı aranır.</p> : <div className="field"><span>Kaç kişisiniz?</span><div className="party-picker">{[1, 2, 3, 4].map((size) => <button type="button" key={size} className={form.partySize === size ? "selected" : ""} onClick={() => updatePartySize(size)}>{form.partySize === size ? `${size} kişi` : size}</button>)}</div></div>}
 
             {game === "league-of-legends" ? (
-              <div className="field"><span>Takımınızdaki roller</span><div className="role-picker">{LOL_ROLES.map((role) => { const selected = form.roles.includes(role.value); return <button type="button" key={role.value} className={selected ? "selected" : ""} onClick={() => setForm((current) => { if (selected) return current; const roles = current.roles.length >= current.partySize ? [...current.roles.slice(0, -1), role.value] : [...current.roles, role.value]; return { ...current, roles }; })}>{role.label}{selected ? <Check size={14} /> : null}</button>; })}</div><small className="field-help">{form.roles.length}/{form.partySize} rol seçildi</small></div>
+              <div className="field"><span>Takımınızdaki roller</span><div className="role-picker">{LOL_ROLES.map((role) => { const selected = form.roles.includes(role.value); const full = form.roles.length >= form.partySize; return <button type="button" key={role.value} className={selected ? "selected" : ""} disabled={!selected && full} onClick={() => setForm((current) => ({ ...current, roles: current.roles.includes(role.value) ? current.roles.filter((value) => value !== role.value) : [...current.roles, role.value] }))}>{role.label}{selected ? <Check size={14} /> : null}</button>; })}</div><small className="field-help">{form.roles.length}/{form.partySize} rol seçildi</small></div>
             ) : null}
 
-            <div className="field"><span>Kaç kişi arıyorsunuz?</span><div className="party-picker search-count-picker">{[1, 2, 3, 4].map((requested) => { const unavailable = requested > 5 - form.partySize; return <button type="button" key={requested} className={form.targetSize - form.partySize === requested ? "selected" : ""} disabled={unavailable} onClick={() => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))}>{form.targetSize - form.partySize === requested ? `${requested} kişi` : requested}</button>; })}</div></div>
+            {game === "league-of-legends" && selectedQueue === "solo-duo" ? null : <div className="field"><span>Kaç kişi arıyorsunuz?</span><div className="party-picker search-count-picker">{[1, 2, 3, 4].map((requested) => { const unavailable = requested > 5 - form.partySize; return <button type="button" key={requested} className={form.targetSize - form.partySize === requested ? "selected" : ""} disabled={unavailable} onClick={() => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))}>{form.targetSize - form.partySize === requested ? `${requested} kişi` : requested}</button>; })}</div></div>}
 
             {game === "cs2" && selectedQueue === "competitive" ? <p className="filter-summary">{selectionLabel(CS2_MAPS, form.maps, "Harita seçilmedi")}</p> : null}
             {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <div className="turnstile-wrap"><Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken("")} onError={() => setError("Güvenlik doğrulaması yüklenemedi. Sayfayı yenile.")} options={{ appearance: "interaction-only", theme, size: "flexible" }} /></div> : null}
@@ -481,7 +479,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
 
       {view === "proposal" ? <section className="center-stage"><div className="status-card proposal-card"><div className="proposal-top"><div className="match-icon"><Check size={28} /></div><div><span className="step-kicker">Eşleşme bulundu</span><h2>Bu takıma hazır mısın?</h2></div><div className="countdown"><Clock3 size={18} /><strong>{seconds}</strong><span>sn</span></div></div><div className="squad-list">{members.map((member) => <div className="squad-member" key={member.playerId}><div className="avatar">{member.displayName.charAt(0).toUpperCase()}</div><div className="member-main"><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)} · {member.partySize === 1 ? "Solo" : `${member.partySize} kişilik grup`}</span></div>{member.isMe ? <span className={`you-pill ${member.accepted ? "ready" : ""}`}>{member.accepted ? <Check size={14} /> : null}{member.accepted ? "Sen · Hazır" : "Sen"}</span> : member.accepted ? <span className="accepted"><Check size={15} /> Hazır</span> : <span className="waiting"><LoaderCircle className="spin" size={15} /> Bekleniyor</span>}</div>)}</div><p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>{error ? <div className="error-message"><X size={15} /> {error}</div> : null}<div className="proposal-actions"><button className="reject-button" disabled={busy || acceptedByMe} onClick={() => respond(false)}><X size={18} /> Reddet</button><button className={`accept-button ${acceptedByMe ? "confirmed" : ""}`} disabled={busy || acceptedByMe} onClick={() => respond(true)}>{busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}{acceptedByMe ? "Onaylandı" : "Kabul et"}</button></div></div></section> : null}
 
-      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Arkadaş kodlarını" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue : member.displayName; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : game === "cs2" ? "Arkadaş kodunu kopyala" : "Riot ID’yi kopyala"}</button></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
+      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Steam bilgilerini" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName; const copyLabel = game === "cs2" && member.contactValue ? "Arkadaş kodunu kopyala" : game === "cs2" ? "Steam adını kopyala" : "Riot ID’yi kopyala"; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : copyLabel}</button></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
     </main>
   );
 }

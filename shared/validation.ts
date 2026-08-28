@@ -1,6 +1,7 @@
 import { z } from "zod";
 import {
   CS2_MAPS,
+  CS2_RATING_BANDS,
   GAME_CONFIGS,
   LOL_ROLES,
   rankSystemFor,
@@ -26,7 +27,7 @@ export type SearchInput = {
 
 const baseSchema = z.object({
   game: z.enum(["valorant", "league-of-legends", "cs2"]),
-  displayName: z.string().trim().min(1, "Oyuncu adını gir.").max(32, "Oyuncu adı çok uzun."),
+  displayName: z.string().trim().max(32, "Oyuncu adı çok uzun."),
   contactValue: z.string().trim().max(32),
   rankSystem: z.string().trim().min(1),
   rank: z.number().int(),
@@ -78,6 +79,9 @@ export const searchSchema = baseSchema.superRefine((data, context) => {
   }
 
   if (data.game === "league-of-legends") {
+    if (selectedQueue === "solo-duo" && (data.partySize !== 1 || data.targetSize !== 2)) {
+      context.addIssue({ code: "custom", message: "Solo/Duo araması bir takım arkadaşı içindir.", path: ["targetSize"] });
+    }
     const allowedRoles = new Set(LOL_ROLES.map((role) => role.value));
     if (data.roles.length !== data.partySize || new Set(data.roles).size !== data.roles.length) {
       context.addIssue({ code: "custom", message: `Takımındaki ${data.partySize} rolü seç.`, path: ["roles"] });
@@ -90,12 +94,16 @@ export const searchSchema = baseSchema.superRefine((data, context) => {
   }
 
   if (data.game === "cs2") {
-    if (!FRIEND_CODE_PATTERN.test(data.contactValue)) {
+    if (!data.displayName && !data.contactValue) {
+      context.addIssue({ code: "custom", message: "Steam adını veya arkadaş kodunu gir.", path: ["displayName"] });
+    }
+    if (data.contactValue && !FRIEND_CODE_PATTERN.test(data.contactValue)) {
       context.addIssue({ code: "custom", message: "Arkadaş kodu 5–12 haneli sayı olmalı.", path: ["contactValue"] });
     }
     if (selectedQueue === "premier") {
-      if (data.rank < 1_000 || data.rank > 50_000 || data.minRank < 1_000 || data.maxRank > 50_000) {
-        context.addIssue({ code: "custom", message: "CS Rating 1.000–50.000 arasında olmalı.", path: ["rank"] });
+      const ratingBands = new Set(CS2_RATING_BANDS.map((band) => band.value));
+      if (!ratingBands.has(data.rank) || !ratingBands.has(data.minRank) || data.maxRank !== 50_000) {
+        context.addIssue({ code: "custom", message: "Geçerli CS Rating aralıklarını seç.", path: ["rank"] });
       }
       if (data.maps.length) {
         context.addIssue({ code: "custom", message: "Premier modunda harita filtresi kullanılmaz.", path: ["maps"] });
@@ -137,7 +145,7 @@ export function createInitialSearchInput(game: GameId): SearchInput {
     minRank: config.defaultMinRank,
     maxRank,
     partySize: 1,
-    targetSize: 5,
+    targetSize: game === "league-of-legends" ? 2 : 5,
     servers: [...config.defaultServers],
     queueTypes: [queueType],
     roles: game === "league-of-legends" ? [LOL_ROLES[0].value] : [],

@@ -3,6 +3,13 @@ export type GameId = "valorant" | "league-of-legends" | "cs2";
 export type FilterOption = {
   value: string;
   label: string;
+  hint?: string;
+};
+
+export type RatingBand = {
+  value: number;
+  label: string;
+  color: string;
 };
 
 export type RankOption = {
@@ -136,12 +143,21 @@ export const LOL_SERVERS: FilterOption[] = [
 ];
 
 export const CS2_REGIONS: FilterOption[] = [
-  { value: "vienna", label: "Vienna" },
-  { value: "frankfurt", label: "Frankfurt" },
-  { value: "warsaw", label: "Warsaw" },
-  { value: "dubai", label: "Dubai" },
-  { value: "amsterdam", label: "Amsterdam" },
-  { value: "stockholm", label: "Stockholm" },
+  { value: "vienna", label: "Vienna", hint: "≈ 45–60 ms" },
+  { value: "frankfurt", label: "Frankfurt", hint: "≈ 50–65 ms" },
+  { value: "warsaw", label: "Warsaw", hint: "≈ 55–70 ms" },
+  { value: "amsterdam", label: "Amsterdam", hint: "≈ 60–75 ms" },
+  { value: "stockholm", label: "Stockholm", hint: "≈ 65–85 ms" },
+  { value: "dubai", label: "Dubai", hint: "≈ 70–95 ms" },
+];
+
+export const CS2_RATING_BANDS: RatingBand[] = [
+  { value: 1_000, label: "1.000 – 4.999", color: "#aeb9c2" },
+  { value: 5_000, label: "5.000 – 9.499", color: "#6faee0" },
+  { value: 9_500, label: "9.500 – 12.999", color: "#657bd9" },
+  { value: 13_000, label: "13.000 – 16.999", color: "#8b67dc" },
+  { value: 17_000, label: "17.000 – 19.499", color: "#ad55d5" },
+  { value: 19_500, label: "19.500+", color: "#d05acb" },
 ];
 
 export const VALORANT_QUEUES: FilterOption[] = [
@@ -250,7 +266,7 @@ export const GAME_CONFIGS: Record<GameId, GameConfig> = {
     queueSelection: "single",
     defaultServers: ["vienna"],
     defaultQueue: "premier",
-    defaultRank: 10_000,
+    defaultRank: 9_500,
     defaultMinRank: 5_000,
     identity: "steam",
   },
@@ -270,14 +286,9 @@ export function ranksFor(game: GameId, queueType: string) {
 
 export function rankNameFor(game: GameId, queueType: string, value: number) {
   if (game === "cs2" && queueType === "premier") {
-    return `${new Intl.NumberFormat("tr-TR").format(value)} CS Rating`;
+    return CS2_RATING_BANDS.find((band) => band.value === value)?.label ?? "Bilinmiyor";
   }
   return ranksFor(game, queueType)[value]?.name ?? "Bilinmiyor";
-}
-
-export function cs2RatingColor(value: number) {
-  const colors = ["#8a9690", "#4b8fd8", "#39a66f", "#d9a441", "#e07a3f", "#c94d65", "#9a67d6", "#8e5bd1", "#d55367", "#f0c45c"];
-  return colors[Math.min(colors.length - 1, Math.max(0, Math.floor(value / 5_000)))] ?? colors[0];
 }
 
 export function optionLabel(options: FilterOption[], value: string) {

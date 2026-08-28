@@ -199,17 +199,20 @@ Kademe renkleri:
 
 - Sunucu tekli seçimdir: Türkiye (`TR1`) veya EU West (`EUW1`); varsayılan Türkiye'dir.
 - Sıra tekli seçimdir: Dereceli Solo/Duo veya Dereceli Flex.
+- Solo/Duo araması daima `1 kişi + 1 takım arkadaşı` olarak çalışır; grup ve aranan kişi kontrolleri gösterilmez.
+- Flex'te grup büyüklüğü ve beş kişilik takım hedefi kontrolleri kullanılır.
 - Demir-Elmas arasında IV/III/II/I; ardından Ustalık, Üstatlık ve Şampiyonluk kullanılır.
 - Varsayılan rank Altın IV, minimum rank Gümüş IV'tür.
-- Grup, dolu rollerini Üst/Orman/Orta/Alt/Destek arasından seçer; seçili rol sayısı grup büyüklüğüne eşittir.
+- Grup, dolu rollerini Üst/Orman/Orta/Alt/Destek arasından seçer; roller eklenip kaldırılabilir ve arama anında seçili rol sayısı grup büyüklüğüne eşit olmalıdır.
 - Aynı role sahip iki grup aynı eşleşmeye alınmaz.
 
 ### Counter-Strike 2
 
-- Steam görünen adı ile 5-12 haneli sayısal arkadaş kodu ayrı alanlardır.
+- Steam görünen adı ile 5-12 haneli sayısal arkadaş kodu ayrı alanlardır. İkisinden yalnızca biri arama için yeterlidir; arkadaş kodu isteğe bağlıdır.
 - Bağlantı bölgeleri Vienna, Frankfurt, Warsaw, Dubai, Amsterdam ve Stockholm'dür; çoklu seçilir, varsayılan Vienna'dır.
+- Bağlantı bölgesi seçeneklerinde Türkiye'den yaklaşık ping aralığı bilgi amaçlı gösterilir; gerçek ping konum ve internet sağlayıcısına göre değişir.
 - Premier ve Competitive tekli mod seçimidir.
-- Premier, 1.000-50.000 tam CS Rating kullanır; varsayılan 10.000, minimum 5.000'dir.
+- Premier altı seçilebilir CS Rating bandı kullanır: 1.000-4.999, 5.000-9.499, 9.500-12.999, 13.000-16.999, 17.000-19.499 ve 19.500+. Varsayılan 9.500-12.999, minimum 5.000-9.499'dur.
 - Competitive, Silver I-Global Elite arasındaki 18 Skill Group'u kullanır.
 - Competitive haritaları çoklu seçilir. Eşleşmedeki bütün kayıtların en az bir ortak haritası olmalıdır.
 - Harita listesi: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, Nuke, Overpass, Train, Vertigo, Office, Boulder, Fachwerk ve Shelter.
@@ -220,10 +223,10 @@ Kademe renkleri:
 - Aynı oyun, rank sistemi, takım hedefi ve kuyruk zorunludur.
 - Bütün grupta en az bir ortak sunucu veya bağlantı bölgesi bulunur.
 - Rank aralığı bütün temsilciler arasında iki yönlü doğrulanır.
-- `5 solo` ve `3+1+1` kompozisyonları üç oyunda da toplam beş oyuncuyu temsil eder.
+- `5 solo` ve `3+1+1` kompozisyonları Valorant, LoL Flex ve CS2'de toplam beş oyuncuyu temsil eder.
 - Bir anonim hesap bütün oyunlarda aynı anda yalnızca bir aktif arama veya lobi taşıyabilir.
 - Lobi bozulunca oyun, rank sistemi, roller, haritalar ve diğer filtreler korunarak otomatik arama sürer.
-- Lobi kartı Riot oyunlarında Riot ID'yi, CS2'de arkadaş kodunu kopyalar.
+- Lobi kartı Riot oyunlarında Riot ID'yi, CS2'de varsa arkadaş kodunu, yoksa Steam adını kopyalar.
 
 ## Negatif Kısıtlar
 
@@ -252,4 +255,5 @@ Kademe renkleri:
 - İleride resmi asset erişimi için `developer.riotgames.com` kaydı ve Personal/Production API key başvurusu gerekir.
 - Production key onayından sonra Public Content Catalog üzerinden resmi rank ikonlarına erişilebilir.
 - RSO entegrasyonu gerekir.
+- API Evangelist Riot Games deposu yalnızca API tanım arşividir; kullanıcı sahipliği doğrulaması sağlamaz. Canlı doğrulama yalnız onaylı Production uygulaması ve RSO ile eklenir.
 - Kendi MMR/rank hesaplama sistemi kurmak yasaktır. CrewFind rank bilgisini yalnızca filtre olarak kullanır.

@@ -113,7 +113,10 @@ export function QueueSelector({
                       })
                     }
                   >
-                    <span>{option.label}</span>
+                    <span className="queue-option-copy">
+                      <strong>{option.label}</strong>
+                      {option.hint ? <small>{option.hint}</small> : null}
+                    </span>
                     {selected ? <Check size={15} aria-hidden="true" /> : null}
                   </button>
                 );

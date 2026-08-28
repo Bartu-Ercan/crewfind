@@ -86,20 +86,20 @@ end $$;
 select pg_temp.clear_test_searches();
 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000101');
-select public.enqueue_and_attempt_match('LolOne#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolOne#TR1","roles":["top"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolOne#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolOne#TR1","roles":["top"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
-select public.enqueue_and_attempt_match('LolTwo#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolTwo#TR1","roles":["jungle"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolTwo#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolTwo#TR1","roles":["jungle"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000103');
-select public.enqueue_and_attempt_match('LolTri#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolTri#TR1","roles":["mid"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolTri#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolTri#TR1","roles":["mid"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000104');
-select public.enqueue_and_attempt_match('LolFour#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolFour#TR1","roles":["bottom"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolFour#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolFour#TR1","roles":["bottom"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000105');
-select public.enqueue_and_attempt_match('LolFive#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolFive#TR1","roles":["support"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolFive#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolFive#TR1","roles":["support"],"maps":[]}'::jsonb);
 do $$ begin
   if not exists (
     select 1 from public.match_proposals mp join public.proposal_entries pe on pe.proposal_id = mp.id
@@ -124,14 +124,14 @@ select pg_temp.clear_test_searches();
 
 -- Premier rank aralığı iki yönlüdür.
 select pg_temp.as_user('00000000-0000-0000-0000-000000000101');
-select public.enqueue_and_attempt_match('Premier One', 10000, 1, 5000, 12000, array['vienna'], array['premier'], 2,
-  '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"2234501","roles":[],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('Premier One', 9500, 1, 5000, 50000, array['vienna'], array['premier'], 2,
+  '{"game":"cs2","rankSystem":"cs2-premier","roles":[],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
-select public.enqueue_and_attempt_match('Premier Two', 13000, 1, 9000, 14000, array['vienna'], array['premier'], 2,
+select public.enqueue_and_attempt_match('Premier Two', 13000, 1, 13000, 50000, array['vienna'], array['premier'], 2,
   '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"2234502","roles":[],"maps":[]}'::jsonb);
 do $$ begin
   if public.attempt_match() is not null then raise exception 'Uyumsuz Premier aralıkları eşleşti'; end if;
-  update public.queue_entries set max_rank = 14000 where player_id = '00000000-0000-0000-0000-000000000101';
+  update public.queue_entries set min_rank = 9500 where player_id = '00000000-0000-0000-0000-000000000102';
   if public.attempt_match() is null then raise exception 'İki yönlü Premier aralığı eşleşmedi'; end if;
 end $$;
 select pg_temp.clear_test_searches();
@@ -157,14 +157,14 @@ end $$;
 select pg_temp.clear_test_searches();
 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000101');
-select public.enqueue_and_attempt_match('LolOne#TR1', 12, 3, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolOne#TR1","roles":["top","jungle","mid"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolOne#TR1', 12, 3, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolOne#TR1","roles":["top","jungle","mid"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
-select public.enqueue_and_attempt_match('LolTwo#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolTwo#TR1","roles":["bottom"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolTwo#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolTwo#TR1","roles":["bottom"],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000103');
-select public.enqueue_and_attempt_match('LolTri#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 5,
-  '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolTri#TR1","roles":["support"],"maps":[]}'::jsonb);
+select public.enqueue_and_attempt_match('LolTri#TR1', 12, 1, 8, 30, array['tr1'], array['flex'], 5,
+  '{"game":"league-of-legends","rankSystem":"lol-flex","contactValue":"LolTri#TR1","roles":["support"],"maps":[]}'::jsonb);
 do $$ begin
   if not exists (
     select 1 from public.match_proposals mp join public.proposal_entries pe on pe.proposal_id = mp.id
@@ -176,13 +176,13 @@ end $$;
 select pg_temp.clear_test_searches();
 
 select pg_temp.as_user('00000000-0000-0000-0000-000000000101');
-select public.enqueue_and_attempt_match('Cs Group', 10000, 3, 5000, 50000, array['vienna'], array['premier'], 5,
+select public.enqueue_and_attempt_match('Cs Group', 9500, 3, 5000, 50000, array['vienna'], array['premier'], 5,
   '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"3234501","roles":[],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
-select public.enqueue_and_attempt_match('Cs Solo A', 10000, 1, 5000, 50000, array['vienna'], array['premier'], 5,
+select public.enqueue_and_attempt_match('Cs Solo A', 9500, 1, 5000, 50000, array['vienna'], array['premier'], 5,
   '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"3234502","roles":[],"maps":[]}'::jsonb);
 select pg_temp.as_user('00000000-0000-0000-0000-000000000103');
-select public.enqueue_and_attempt_match('Cs Solo B', 10000, 1, 5000, 50000, array['vienna'], array['premier'], 5,
+select public.enqueue_and_attempt_match('Cs Solo B', 9500, 1, 5000, 50000, array['vienna'], array['premier'], 5,
   '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"3234503","roles":[],"maps":[]}'::jsonb);
 do $$ begin
   if not exists (

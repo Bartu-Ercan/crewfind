@@ -164,9 +164,9 @@ describe("matchmaking", () => {
     const lolEntry = (id: string, role: string): MatchEntry => ({
       ...entry(id, 1),
       game: "league-of-legends",
-      rankSystem: "lol-solo",
+      rankSystem: "lol-flex",
       servers: ["tr1"],
-      queueTypes: ["solo-duo"],
+      queueTypes: ["flex"],
       roles: [role],
     });
     expect(entriesAreCompatible(lolEntry("a", "mid"), lolEntry("b", "mid"))).toBe(false);
