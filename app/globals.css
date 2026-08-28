@@ -222,6 +222,7 @@ h3,
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
+  transition: opacity 140ms ease, transform 140ms ease;
 }
 
 .game-selector-option {
@@ -301,6 +302,14 @@ h3,
   border: 1px solid var(--border);
   border-radius: 18px;
   background: var(--surface);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.game-selector-menu.closing,
+.queue-selector-menu.closing {
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
 }
 
 .queue-selector-group + .queue-selector-group {
@@ -456,6 +465,16 @@ h3,
   color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
+}
+
+.hero-copy .active-player-count {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.active-player-count strong {
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 
 .search-form {

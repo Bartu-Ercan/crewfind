@@ -97,6 +97,34 @@ describe("matchmaking", () => {
     ]);
   });
 
+  it("beş solo oyuncuyu beş kişilik lobide birleştirir", () => {
+    const result = findBestFive([
+      entry("solo-1", 1, 10, 1),
+      entry("solo-2", 1, 10, 2),
+      entry("solo-3", 1, 10, 3),
+      entry("solo-4", 1, 10, 4),
+      entry("solo-5", 1, 10, 5),
+    ]);
+
+    expect(result).toHaveLength(5);
+    expect(result?.reduce((total, item) => total + item.partySize, 0)).toBe(5);
+  });
+
+  it("üç kişilik grubu iki soloyla beş kişiye tamamlar", () => {
+    const result = findBestFive([
+      entry("group-of-three", 3, 10, 1),
+      entry("solo-1", 1, 10, 2),
+      entry("solo-2", 1, 10, 3),
+    ]);
+
+    expect(result?.map((item) => item.id)).toEqual([
+      "group-of-three",
+      "solo-1",
+      "solo-2",
+    ]);
+    expect(result?.reduce((total, item) => total + item.partySize, 0)).toBe(5);
+  });
+
   it("mevcut takımı beş solodan önce tamamlar", () => {
     const result = findBestFive([
       entry("s1", 1, 10, 1),

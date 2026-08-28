@@ -5,6 +5,7 @@ import { Check, ChevronDown, Crosshair, Swords, Target } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState } from "react";
 import { useClickOutside } from "@/frontend/hooks/use-click-outside";
+import { useDelayedHoverClose } from "@/frontend/hooks/use-delayed-hover-close";
 
 const games = [
   { href: "/valorant", name: "VALORANT", icon: Crosshair },
@@ -28,17 +29,28 @@ export function GameSelector({ open, onOpenChange }: GameSelectorProps) {
   }, [onOpenChange, open]);
   const currentGame = games.find((game) => pathname === game.href) ?? games[0];
   const CurrentIcon = currentGame.icon;
-  useClickOutside(ref, isOpen, () => setOpen(false));
+  const close = useCallback(() => setOpen(false), [setOpen]);
+  const { closing, cancelClose, handlePointerEnter, handlePointerLeave } =
+    useDelayedHoverClose(isOpen, close);
+  useClickOutside(ref, isOpen, close);
 
   return (
-    <div className="game-selector" ref={ref}>
+    <div
+      className="game-selector"
+      ref={ref}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+    >
       <button
         type="button"
         className="game-selector-trigger"
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-controls="game-selector-menu"
-        onClick={() => setOpen(!isOpen)}
+        onClick={() => {
+          cancelClose();
+          setOpen(!isOpen);
+        }}
       >
         <CurrentIcon size={15} aria-hidden="true" />
         <span>{currentGame.name}</span>
@@ -46,7 +58,11 @@ export function GameSelector({ open, onOpenChange }: GameSelectorProps) {
       </button>
 
       {isOpen ? (
-        <div className="game-selector-menu" id="game-selector-menu" role="menu">
+        <div
+          className={`game-selector-menu ${closing ? "closing" : ""}`}
+          id="game-selector-menu"
+          role="menu"
+        >
           {games.map((game) => {
             const Icon = game.icon;
             const selected = game.href === currentGame.href;
@@ -58,7 +74,7 @@ export function GameSelector({ open, onOpenChange }: GameSelectorProps) {
                 href={game.href}
                 role="menuitem"
                 aria-current={selected ? "page" : undefined}
-                onClick={() => setOpen(false)}
+                onClick={close}
               >
                 <Icon size={16} aria-hidden="true" />
                 <span>{game.name}</span>

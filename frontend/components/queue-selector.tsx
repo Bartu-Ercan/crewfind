@@ -3,6 +3,7 @@
 import { Check, ChevronDown, MapPin } from "lucide-react";
 import { useCallback, useRef, useState } from "react";
 import { useClickOutside } from "@/frontend/hooks/use-click-outside";
+import { useDelayedHoverClose } from "@/frontend/hooks/use-delayed-hover-close";
 import {
   QUEUE_TYPES,
   VALORANT_SERVERS,
@@ -41,10 +42,18 @@ export function QueueSelector({
     onOpenChange?.(nextOpen);
   }, [onOpenChange, open]);
   const menuId = "queue-selector-menu";
-  useClickOutside(ref, isOpen, () => setOpen(false));
+  const close = useCallback(() => setOpen(false), [setOpen]);
+  const { closing, cancelClose, handlePointerEnter, handlePointerLeave } =
+    useDelayedHoverClose(isOpen, close);
+  useClickOutside(ref, isOpen, close);
 
   return (
-    <div className="queue-selector" ref={ref}>
+    <div
+      className="queue-selector"
+      ref={ref}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+    >
       <button
         type="button"
         className="queue-selector-trigger"
@@ -52,7 +61,10 @@ export function QueueSelector({
         aria-haspopup="menu"
         aria-controls={menuId}
         aria-label={`Sunucu ve kuyruk: ${queueLabel(servers, queueTypes)}`}
-        onClick={() => setOpen(!isOpen)}
+        onClick={() => {
+          cancelClose();
+          setOpen(!isOpen);
+        }}
       >
         <MapPin size={15} aria-hidden="true" />
         <span className="queue-selector-trigger-label">
@@ -63,7 +75,11 @@ export function QueueSelector({
       </button>
 
       {isOpen ? (
-        <div className="queue-selector-menu" id={menuId} role="menu">
+        <div
+          className={`queue-selector-menu ${closing ? "closing" : ""}`}
+          id={menuId}
+          role="menu"
+        >
           <div className="queue-selector-group">
             <span>VALORANT sunucusu</span>
             <div className="queue-server-grid">

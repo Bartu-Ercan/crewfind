@@ -62,6 +62,7 @@ export function CrewFindApp() {
   const [needsCaptcha, setNeedsCaptcha] = useState(false);
   const [authReady, setAuthReady] = useState(false);
   const [notice, setNotice] = useState("");
+  const [activePlayerCount, setActivePlayerCount] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -113,6 +114,27 @@ export function CrewFindApp() {
   }, []);
 
   useEffect(() => cleanupTimers, [cleanupTimers]);
+
+  useEffect(() => {
+    if (demoMode || view !== "home") return;
+
+    let active = true;
+    const refreshCount = async () => {
+      const { data, error: countError } = await getSupabaseBrowserClient().rpc(
+        "get_active_player_count",
+      );
+      const count = Number(data);
+      if (!active || countError || !Number.isInteger(count) || count < 0) return;
+      setActivePlayerCount(count);
+    };
+
+    void refreshCount();
+    const interval = setInterval(() => void refreshCount(), 15_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, [demoMode, view]);
 
   useEffect(() => {
     if (view !== "searching") return;
@@ -437,6 +459,11 @@ export function CrewFindApp() {
             <p>
               Rankına uygun oyuncularla saniyeler içinde eşleş.
             </p>
+            {activePlayerCount !== null ? (
+              <p className="active-player-count">
+                Şu an <strong>{activePlayerCount}</strong> oyuncu arıyor
+              </p>
+            ) : null}
           </div>
 
           <form className="search-form" onSubmit={startSearch}>

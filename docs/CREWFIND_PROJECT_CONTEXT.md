@@ -147,7 +147,9 @@ Kademe renkleri:
 
 - Valorant sunucuları çoklu seçilebilir; en az bir sunucu her zaman seçili kalır.
 - Rekabetçi ve Derecesiz kuyrukları birlikte seçilebilir; en az bir kuyruk her zaman seçili kalır.
-- Seçim yapınca dropdown kapanmaz; yalnızca dışarı tıklayınca veya tetikleyiciye yeniden basınca kapanır.
+- Seçim yapınca dropdown kapanmaz; dışarı tıklayınca veya tetikleyiciye yeniden basınca anında kapanır.
+- Oyun ve sunucu/kuyruk panelleri mouse alanı terk edince kısa tolerans ve sade fade sonrasında kapanır.
+- Mouse kapanma tamamlanmadan alana dönerse panel açık kalır; dokunmatik ve klavye davranışı değişmez.
 - Eşleşen bütün grupların en az bir ortak sunucusu ve bir ortak kuyruk türü bulunmalıdır.
 
 ## Eşleşme Onayı
@@ -168,6 +170,8 @@ Kademe renkleri:
 
 - Hero altında tek satır gerçek veri gösterir: `Şu an X oyuncu arıyor`.
 - Dekoratif değildir.
+- `searching` kayıtları ve süresi dolmamış pending teklifler temsil ettikleri `party_size` toplamıyla sayılır.
+- Ana ekranda 15 saniyede bir güncellenir; veri alınamazsa sahte veya sıfır kabul edilen bir değer gösterilmez.
 
 ## Scrollbar
 
