@@ -14,11 +14,12 @@ const games = [
 ] as const;
 
 type GameSelectorProps = {
+  disabled?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
 
-export function GameSelector({ open, onOpenChange }: GameSelectorProps) {
+export function GameSelector({ disabled = false, open, onOpenChange }: GameSelectorProps) {
   const pathname = usePathname();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -47,6 +48,8 @@ export function GameSelector({ open, onOpenChange }: GameSelectorProps) {
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-controls="game-selector-menu"
+        aria-disabled={disabled}
+        disabled={disabled}
         onClick={() => {
           cancelClose();
           setOpen(!isOpen);

@@ -5,7 +5,7 @@ Bu dosya CrewFind'in tüm tasarım ve ürün kararlarının tek doğruluk kayna�
 ## Marka
 
 - İsim: CrewFind. Kararlı, değiştirilmeyecek.
-- Konsept: Valorant ve ileride LoL/CS2 için oyuncu/takım bulma ve matchmaking platformu.
+- Konsept: Valorant, LoL ve CS2 için canlı oyuncu/takım bulma ve matchmaking platformu.
 
 ## Renk Sistemi - Sky Mint x Graphite
 
@@ -190,6 +190,40 @@ Kademe renkleri:
 - Varsayılan oyun Valorant'tır.
 - Her oyunun kendi rank rozeti seti ve kademe sayısı bulunur.
 - Bölge/kuyruk seçici gerçek ve çalışan dropdown olur.
+- Üç oyun tek, yapılandırılabilir uygulamayı kullanır; kuyruk kayıtları `game` ve `rank_system` ile kesin olarak ayrılır.
+- Aktif arama, teklif veya lobi varken oyun ve filtre seçicileri değiştirilemez.
+- Sayfa yenilenince `get_my_status()` oyun ve filtre bağlamını döndürür; kullanıcı doğru oyun route'una yönlendirilir.
+- Canlı kullanıcı sayacı bütün oyunların temsil edilen toplam oyuncu sayısını gösterir.
+
+### League of Legends
+
+- Sunucu tekli seçimdir: Türkiye (`TR1`) veya EU West (`EUW1`); varsayılan Türkiye'dir.
+- Sıra tekli seçimdir: Dereceli Solo/Duo veya Dereceli Flex.
+- Demir-Elmas arasında IV/III/II/I; ardından Ustalık, Üstatlık ve Şampiyonluk kullanılır.
+- Varsayılan rank Altın IV, minimum rank Gümüş IV'tür.
+- Grup, dolu rollerini Üst/Orman/Orta/Alt/Destek arasından seçer; seçili rol sayısı grup büyüklüğüne eşittir.
+- Aynı role sahip iki grup aynı eşleşmeye alınmaz.
+
+### Counter-Strike 2
+
+- Steam görünen adı ile 5-12 haneli sayısal arkadaş kodu ayrı alanlardır.
+- Bağlantı bölgeleri Vienna, Frankfurt, Warsaw, Dubai, Amsterdam ve Stockholm'dür; çoklu seçilir, varsayılan Vienna'dır.
+- Premier ve Competitive tekli mod seçimidir.
+- Premier, 1.000-50.000 tam CS Rating kullanır; varsayılan 10.000, minimum 5.000'dir.
+- Competitive, Silver I-Global Elite arasındaki 18 Skill Group'u kullanır.
+- Competitive haritaları çoklu seçilir. Eşleşmedeki bütün kayıtların en az bir ortak haritası olmalıdır.
+- Harita listesi: Ancient, Anubis, Cache, Dust II, Inferno, Mirage, Nuke, Overpass, Train, Vertigo, Office, Boulder, Fachwerk ve Shelter.
+- Premier'da harita filtresi kullanılmaz.
+
+### Ortak Matchmaking Kuralları
+
+- Aynı oyun, rank sistemi, takım hedefi ve kuyruk zorunludur.
+- Bütün grupta en az bir ortak sunucu veya bağlantı bölgesi bulunur.
+- Rank aralığı bütün temsilciler arasında iki yönlü doğrulanır.
+- `5 solo` ve `3+1+1` kompozisyonları üç oyunda da toplam beş oyuncuyu temsil eder.
+- Bir anonim hesap bütün oyunlarda aynı anda yalnızca bir aktif arama veya lobi taşıyabilir.
+- Lobi bozulunca oyun, rank sistemi, roller, haritalar ve diğer filtreler korunarak otomatik arama sürer.
+- Lobi kartı Riot oyunlarında Riot ID'yi, CS2'de arkadaş kodunu kopyalar.
 
 ## Negatif Kısıtlar
 
@@ -201,16 +235,16 @@ Kademe renkleri:
 
 ## Yol Haritası - Sıradaki Adımlar
 
-1. Route mimarisi: `/valorant`, `/league-of-legends`, `/cs2`.
-2. Navbar oyun seçici: pill ve dropdown.
-3. Bölge/kuyruk seçiciyi gerçek ve çalışır hale getirme.
-4. Canlı kullanıcı sayacı.
-5. Logo entegrasyonu ve mikro animasyon.
-6. LoL ve CS2 rank rozeti setleri.
-7. Dropdown click-outside davranışı.
-8. Lobi eksilme ve otomatik yeniden arama mantığı.
-9. SEO: route bazlı title/meta, OpenGraph, sitemap ve robots.
-10. Güvenlik: rate limiting, Riot ID doğrulama ve env kontrolü.
+1. Tamamlandı: Route mimarisi: `/valorant`, `/league-of-legends`, `/cs2`.
+2. Tamamlandı: Navbar oyun seçici: pill ve dropdown.
+3. Tamamlandı: Oyunlara özel bölge/kuyruk seçiciler.
+4. Tamamlandı: Canlı kullanıcı sayacı.
+5. Tamamlandı: Logo entegrasyonu ve mikro animasyon.
+6. Tamamlandı: LoL ve CS2 rank sistemleri ve canlı matchmaking.
+7. Tamamlandı: Dropdown click-outside ve mouse-leave davranışı.
+8. Tamamlandı: Lobi eksilme ve bağlamı koruyan otomatik yeniden arama.
+9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
+10. Sıradaki: Güvenlik sertleştirmesi; rate limiting, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Yük testi; kullanıcı sayısı arttıkça, düşük öncelik.
 
 ## Riot Developer Portal

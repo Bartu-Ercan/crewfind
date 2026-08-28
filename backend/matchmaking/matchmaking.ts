@@ -1,5 +1,7 @@
 export type MatchEntry = {
   id: string;
+  game: "valorant" | "league-of-legends" | "cs2";
+  rankSystem: string;
   partySize: number;
   targetSize: number;
   rank: number;
@@ -7,6 +9,8 @@ export type MatchEntry = {
   maxRank: number;
   servers: string[];
   queueTypes: string[];
+  roles: string[];
+  maps: string[];
   createdAt: number;
 };
 
@@ -16,9 +20,13 @@ export function entriesAreCompatible(a: MatchEntry, b: MatchEntry) {
     a.rank <= b.maxRank &&
     b.rank >= a.minRank &&
     b.rank <= a.maxRank &&
+    a.game === b.game &&
+    a.rankSystem === b.rankSystem &&
     a.servers.some((server) => b.servers.includes(server)) &&
     a.queueTypes.some((queueType) => b.queueTypes.includes(queueType)) &&
-    a.targetSize === b.targetSize
+    a.targetSize === b.targetSize &&
+    (a.game !== "league-of-legends" || !a.roles.some((role) => b.roles.includes(role))) &&
+    (a.rankSystem !== "cs2-competitive" || a.maps.some((map) => b.maps.includes(map)))
   );
 }
 
@@ -38,6 +46,8 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
     total: number,
     commonServers: string[],
     commonQueueTypes: string[],
+    selectedRoles: string[],
+    commonMaps: string[],
   ) {
     const targetSize = selected[0]?.targetSize ?? 5;
     if (total === targetSize) {
@@ -54,10 +64,17 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
       const nextQueueTypes = selected.length
         ? commonQueueTypes.filter((queueType) => candidate.queueTypes.includes(queueType))
         : candidate.queueTypes;
+      const nextRoles = [...selectedRoles, ...candidate.roles];
+      const nextMaps = selected.length
+        ? commonMaps.filter((map) => candidate.maps.includes(map))
+        : candidate.maps;
+      const rolesAreUnique = new Set(nextRoles).size === nextRoles.length;
 
       if (
         nextServers.length > 0 &&
         nextQueueTypes.length > 0 &&
+        (candidate.game !== "league-of-legends" || rolesAreUnique) &&
+        (candidate.rankSystem !== "cs2-competitive" || nextMaps.length > 0) &&
         selected.every((entry) => entriesAreCompatible(entry, candidate))
       ) {
         if (
@@ -67,6 +84,8 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
             total + candidate.partySize,
             nextServers,
             nextQueueTypes,
+            nextRoles,
+            nextMaps,
           )
         ) {
           return true;
@@ -76,6 +95,6 @@ export function findBestFive(entries: MatchEntry[]): MatchEntry[] | null {
     return false;
   }
 
-  walk(0, [], 0, [], []);
+  walk(0, [], 0, [], [], [], []);
   return best;
 }

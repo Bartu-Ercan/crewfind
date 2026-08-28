@@ -1,8 +1,8 @@
 import { ChevronDown, Shield } from "lucide-react";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 
 import { useClickOutside } from "@/frontend/hooks/use-click-outside";
-import { RANKS, RANK_TIER_COLORS, rankParts } from "@/shared/ranks";
+import type { RankOption } from "@/shared/game-config";
 
 type RankSelectProps = {
   id: string;
@@ -11,35 +11,14 @@ type RankSelectProps = {
   onChange: (value: number) => void;
   open: boolean;
   onOpenChange: (id: string | null) => void;
+  ranks: RankOption[];
   min?: number;
   max?: number;
 };
 
-type RankOption = {
+type IndexedRankOption = RankOption & {
   index: number;
-  name: string;
-  tier: string;
-  division?: string;
-  color: string;
 };
-
-const rankOptions: RankOption[] = RANKS.map((rank, index) => {
-  const { tier, division } = rankParts(rank);
-  return {
-    index,
-    name: rank,
-    tier,
-    division,
-    color: RANK_TIER_COLORS[tier] ?? "#8a9690",
-  };
-});
-
-const rankGroups = rankOptions.reduce<RankOption[][]>((groups, option) => {
-  const group = groups.find((items) => items[0]?.tier === option.tier);
-  if (group) group.push(option);
-  else groups.push([option]);
-  return groups;
-}, []);
 
 export function RankSelect({
   id,
@@ -48,9 +27,20 @@ export function RankSelect({
   onChange,
   open,
   onOpenChange,
+  ranks,
   min = 0,
-  max = RANKS.length - 1,
+  max = ranks.length - 1,
 }: RankSelectProps) {
+  const { rankOptions, rankGroups } = useMemo(() => {
+    const options: IndexedRankOption[] = ranks.map((rank, index) => ({ ...rank, index }));
+    const groups = options.reduce<IndexedRankOption[][]>((result, option) => {
+      const group = result.find((items) => items[0]?.tier === option.tier);
+      if (group) group.push(option);
+      else result.push([option]);
+      return result;
+    }, []);
+    return { rankOptions: options, rankGroups: groups };
+  }, [ranks]);
   const selected = rankOptions[value] ?? rankOptions[0];
   const listboxId = `${id}-listbox`;
   const ref = useRef<HTMLDivElement>(null);
@@ -117,7 +107,7 @@ export function RankSelect({
                             onOpenChange(null);
                           }}
                         >
-                          {option.division ?? "R"}
+                          {option.division ?? option.name.slice(0, 1)}
                         </button>
                       );
                     })}

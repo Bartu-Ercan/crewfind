@@ -5,19 +5,20 @@ import { useCallback, useRef, useState } from "react";
 import { useClickOutside } from "@/frontend/hooks/use-click-outside";
 import { useDelayedHoverClose } from "@/frontend/hooks/use-delayed-hover-close";
 import {
-  QUEUE_TYPES,
-  VALORANT_SERVERS,
-  queueLabel,
-  queueSelectionLabel,
-  serverSelectionLabel,
-  type QueueType,
-  type ValorantServer,
-} from "@/shared/queue-filters";
+  CS2_MAPS,
+  GAME_CONFIGS,
+  optionLabel,
+  selectionLabel,
+  type GameId,
+} from "@/shared/game-config";
 
 type QueueSelectorProps = {
-  servers: ValorantServer[];
-  queueTypes: QueueType[];
-  onChange: (filters: { servers: ValorantServer[]; queueTypes: QueueType[] }) => void;
+  disabled?: boolean;
+  game: GameId;
+  servers: string[];
+  queueTypes: string[];
+  maps: string[];
+  onChange: (filters: { servers: string[]; queueTypes: string[]; maps: string[] }) => void;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 };
@@ -28,12 +29,16 @@ function toggleSelection<T>(values: T[], value: T) {
 }
 
 export function QueueSelector({
+  disabled = false,
+  game,
   servers,
   queueTypes,
+  maps,
   onChange,
   open,
   onOpenChange,
 }: QueueSelectorProps) {
+  const config = GAME_CONFIGS[game];
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const isOpen = open ?? uncontrolledOpen;
@@ -60,7 +65,9 @@ export function QueueSelector({
         aria-expanded={isOpen}
         aria-haspopup="menu"
         aria-controls={menuId}
-        aria-label={`Sunucu ve kuyruk: ${queueLabel(servers, queueTypes)}`}
+        aria-disabled={disabled}
+        disabled={disabled}
+        aria-label={`Sunucu ve kuyruk: ${selectionLabel(config.servers, servers, "Sunucu")} · ${selectionLabel(config.queues, queueTypes, "Kuyruk")}`}
         onClick={() => {
           cancelClose();
           setOpen(!isOpen);
@@ -68,8 +75,12 @@ export function QueueSelector({
       >
         <MapPin size={15} aria-hidden="true" />
         <span className="queue-selector-trigger-label">
-          <strong>{serverSelectionLabel(servers)}</strong>
-          <small>{queueSelectionLabel(queueTypes)}</small>
+          <strong>{selectionLabel(config.servers, servers, "Sunucu")}</strong>
+          <small>
+            {queueTypes.length === 1
+              ? optionLabel(config.queues, queueTypes[0])
+              : "Tüm kuyruklar"}
+          </small>
         </span>
         <ChevronDown className={isOpen ? "open" : ""} size={14} aria-hidden="true" />
       </button>
@@ -81,9 +92,9 @@ export function QueueSelector({
           role="menu"
         >
           <div className="queue-selector-group">
-            <span>VALORANT sunucusu</span>
+            <span>{config.serverGroupLabel}</span>
             <div className="queue-server-grid">
-              {VALORANT_SERVERS.map((option) => {
+              {config.servers.map((option) => {
                 const selected = servers.includes(option.value);
                 return (
                   <button
@@ -93,7 +104,13 @@ export function QueueSelector({
                     role="menuitemcheckbox"
                     aria-checked={selected}
                     onClick={() =>
-                      onChange({ servers: toggleSelection(servers, option.value), queueTypes })
+                      onChange({
+                        servers: config.serverSelection === "single"
+                          ? [option.value]
+                          : toggleSelection(servers, option.value),
+                        queueTypes,
+                        maps,
+                      })
                     }
                   >
                     <span>{option.label}</span>
@@ -107,7 +124,7 @@ export function QueueSelector({
           <div className="queue-selector-group">
             <span>Kuyruk</span>
             <div className="queue-mode-picker">
-              {QUEUE_TYPES.map((option) => {
+              {config.queues.map((option) => {
                 const selected = queueTypes.includes(option.value);
                 return (
                   <button
@@ -117,7 +134,15 @@ export function QueueSelector({
                     role="menuitemcheckbox"
                     aria-checked={selected}
                     onClick={() =>
-                      onChange({ servers, queueTypes: toggleSelection(queueTypes, option.value) })
+                      onChange({
+                        servers,
+                        queueTypes: config.queueSelection === "single"
+                          ? [option.value]
+                          : toggleSelection(queueTypes, option.value),
+                        maps: game === "cs2" && option.value === "competitive"
+                          ? (maps.length ? maps : CS2_MAPS.map((map) => map.value))
+                          : game === "cs2" ? [] : maps,
+                      })
                     }
                   >
                     {option.label}
@@ -127,6 +152,34 @@ export function QueueSelector({
               })}
             </div>
           </div>
+
+          {game === "cs2" && queueTypes.includes("competitive") ? (
+            <div className="queue-selector-group">
+              <span>Haritalar</span>
+              <div className="queue-map-grid">
+                {CS2_MAPS.map((option) => {
+                  const selected = maps.includes(option.value);
+                  return (
+                    <button
+                      type="button"
+                      key={option.value}
+                      className={selected ? "queue-server-option selected" : "queue-server-option"}
+                      role="menuitemcheckbox"
+                      aria-checked={selected}
+                      onClick={() => onChange({
+                        servers,
+                        queueTypes,
+                        maps: toggleSelection(maps, option.value),
+                      })}
+                    >
+                      <span>{option.label}</span>
+                      {selected ? <Check size={15} aria-hidden="true" /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>

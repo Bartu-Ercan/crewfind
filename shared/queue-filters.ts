@@ -1,19 +1,10 @@
-export const VALORANT_SERVERS = [
-  { value: "frankfurt", label: "Frankfurt" },
-  { value: "paris", label: "Paris" },
-  { value: "london", label: "London" },
-  { value: "istanbul", label: "İstanbul" },
-  { value: "stockholm", label: "Stockholm" },
-  { value: "warsaw", label: "Warsaw" },
-] as const;
+import { VALORANT_QUEUES, VALORANT_SERVERS } from "@/shared/game-config";
 
-export const QUEUE_TYPES = [
-  { value: "competitive", label: "Rekabetçi" },
-  { value: "unrated", label: "Derecesiz" },
-] as const;
+export { VALORANT_SERVERS };
+export const QUEUE_TYPES = VALORANT_QUEUES;
 
-export type ValorantServer = (typeof VALORANT_SERVERS)[number]["value"];
-export type QueueType = (typeof QUEUE_TYPES)[number]["value"];
+export type ValorantServer = string;
+export type QueueType = string;
 
 export function serverLabel(server: ValorantServer) {
   return VALORANT_SERVERS.find((option) => option.value === server)?.label ?? "Frankfurt";
