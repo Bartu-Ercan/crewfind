@@ -1,4 +1,4 @@
-const fallbackSiteUrl = "https://crewfind-tr.vercel.app";
+const fallbackSiteUrl = "https://crewfind.vercel.app";
 import type { Metadata } from "next";
 import type { GameId } from "@/shared/game-config";
 

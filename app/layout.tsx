@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Rajdhani } from "next/font/google";
 import { bilingualDescription, canonicalUrl, seo, siteName, siteUrl } from "@/frontend/config/seo";
+import { AccountProvider } from "@/frontend/components/account-provider";
+import { GuestImportDialog } from "@/frontend/components/guest-import-dialog";
 import "./globals.css";
 
 const rajdhani = Rajdhani({
@@ -67,7 +69,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="tr">
-      <body className={`${rajdhani.variable} ${hanken.variable}`}>{children}</body>
+      <body className={`${rajdhani.variable} ${hanken.variable}`}><AccountProvider>{children}<GuestImportDialog /></AccountProvider></body>
     </html>
   );
 }

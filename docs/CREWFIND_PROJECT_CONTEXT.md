@@ -245,6 +245,21 @@ Kademe renkleri:
 - Lobi bozulunca oyun, rank sistemi, roller, haritalar ve diğer filtreler korunarak otomatik arama sürer.
 - Lobi kartı Riot oyunlarında Riot ID'yi, CS2'de varsa arkadaş kodunu, yoksa Steam adını kopyalar.
 
+## Kalıcı Hesap ve Kayıtlı Riot Profilleri
+
+- Misafir matchmaking ana akış olarak çalışmaya devam eder; giriş zorunlu değildir.
+- Kalıcı hesaplarda Google, Discord ve doğrulanmış e-posta/parola girişleri kullanılır. Riot ile giriş yalnız Production ve RSO onayı sonrasında görünür.
+- Anonim kullanıcı yeni bir kimlik bağladığında aynı Supabase UUID'si korunur; aktif arama ve lobi kaybolmaz.
+- Aktif arama, teklif veya lobi sırasında hesap değiştirme, çıkış ve kayıtlı oyun profili değiştirme engellenir.
+- CrewFind kullanıcı adı 3-20 karakterdir; harf, sayı ve `_` kabul eder ve büyük/küçük harfe duyarsız benzersizdir.
+- Kalıcı kullanıcı en fazla 10 Riot hesabı saklar. Her hesap VALORANT ve LoL için ayrı tam arama tercihi taşıyabilir.
+- RSO öncesindeki Riot hesapları yalnız `Kullanıcı beyanı` olarak gösterilir; doğrulanmış rozeti kullanılmaz.
+- VALORANT ve LoL formunda kayıtlı hesap seçici bulunur; CS2 bu sistemin dışında kalır.
+- Form değişiklikleri kayıtlı profili otomatik değiştirmez; kullanıcı ayrı kaydetme işlemi yapar.
+- Misafir kayıtları versionlanmış localStorage verisidir; kalıcı hesaba geçişte yalnız kullanıcının seçtikleri buluta aktarılır.
+- Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
+- Gizlilik ve kullanım koşulları sürümlüdür; hesap oluştururken kabul zamanı kalıcı profilde saklanır.
+
 ## Negatif Kısıtlar
 
 - Emoji yok.
@@ -266,7 +281,8 @@ Kademe renkleri:
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
-12. Sıradaki: Kontrollü yük testi.
+12. Devam ediyor: Kalıcı hesap, e-posta girişi ve çoklu Riot profili uygulandı; Google/Discord OAuth ve özel SMTP sağlayıcı kimlik bilgilerini bekliyor.
+13. Sonraki: Hesap sağlayıcıları tamamlandıktan sonra kontrollü yük testi.
 
 ## Riot Developer Portal
 

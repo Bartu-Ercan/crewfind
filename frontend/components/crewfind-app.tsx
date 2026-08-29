@@ -23,12 +23,17 @@ import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } fro
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
 import type { LolProfile } from "@/backend/lol-profile/profile";
 import { Brand } from "@/frontend/components/brand";
+import { AuthMenu } from "@/frontend/components/auth-menu";
+import { useAccount } from "@/frontend/components/account-provider";
+import { SavedAccountPicker, type SelectableRiotAccount } from "@/frontend/components/saved-account-picker";
 import { GameSelector } from "@/frontend/components/game-selector";
 import { QueueSelector } from "@/frontend/components/queue-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
 import { RatingSelect } from "@/frontend/components/rating-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { isRateLimitedError, rateLimitRetryAfter, readableError } from "@/frontend/lib/error-messages";
+import { readGuestAccounts, removeGuestAccounts, upsertGuestAccount } from "@/frontend/lib/guest-accounts";
+import type { GuestRiotAccount, SavedGamePreference } from "@/frontend/types/account";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import {
   CS2_MAPS,
@@ -60,6 +65,7 @@ function normalizeMembers(members: Member[] | undefined) {
 
 export function CrewFindApp({ game }: CrewFindAppProps) {
   const router = useRouter();
+  const { overview, isPermanent, refresh: refreshAccount } = useAccount();
   const config = GAME_CONFIGS[game];
   const [view, setView] = useState<View>("home");
   const [form, setForm] = useState<SearchInput>(() => createInitialSearchInput(game));
@@ -86,6 +92,9 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [activePlayerCount, setActivePlayerCount] = useState<number | null>(null);
   const [lolProfileEnabled, setLolProfileEnabled] = useState(false);
   const [lolProfiles, setLolProfiles] = useState<Record<string, LolProfileState>>({});
+  const [guestAccounts, setGuestAccounts] = useState<GuestRiotAccount[]>([]);
+  const [selectedSavedAccountId, setSelectedSavedAccountId] = useState<string | null>(null);
+  const [profileMessage, setProfileMessage] = useState("");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const resumeChecked = useRef(false);
   const statusRateLimitUntil = useRef(0);
@@ -102,6 +111,21 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const turnstileFlag = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED;
   const turnstileEnabled = Boolean(turnstileSiteKey) &&
     (turnstileFlag === undefined || turnstileFlag.trim().toLowerCase() === "true");
+  const selectableAccounts = useMemo<SelectableRiotAccount[]>(() => {
+    if (game === "cs2") return [];
+    const cloud = (overview?.riotAccounts ?? []).filter((account) =>
+      account.preferences.some((preference) => preference.game === game),
+    );
+    const local = guestAccounts.filter((account) => account.game === game).map((account) => ({
+      id: account.id,
+      riotId: account.riotId,
+      verificationStatus: "manual" as const,
+      lastUsedAt: account.updatedAt,
+      preferences: [account.preference],
+      local: true,
+    }));
+    return [...cloud, ...local].sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
+  }, [game, guestAccounts, overview?.riotAccounts]);
 
   useEffect(() => {
     setForm(createInitialSearchInput(game));
@@ -109,7 +133,27 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     setIdentityDetail(game === "cs2" ? "" : game === "league-of-legends" ? "TR1" : "TR1");
     setOpenRankSelect(null);
     setOpenTopbarSelect(null);
+    setSelectedSavedAccountId(null);
+    setProfileMessage("");
   }, [game]);
+
+  useEffect(() => { setGuestAccounts(readGuestAccounts()); }, [game, overview]);
+
+  const selectSavedAccount = useCallback((account: SelectableRiotAccount) => {
+    const preference = account.preferences.find((item) => item.game === game);
+    if (!preference || game === "cs2") return;
+    const separator = account.riotId.lastIndexOf("#");
+    setIdentityName(separator > 0 ? account.riotId.slice(0, separator) : account.riotId);
+    setIdentityDetail(separator > 0 ? account.riotId.slice(separator + 1) : "TR1");
+    setForm({ ...preference, game, displayName: "", contactValue: "" });
+    setSelectedSavedAccountId(account.id);
+    setProfileMessage("");
+  }, [game]);
+
+  useEffect(() => {
+    if (game === "cs2" || selectedSavedAccountId || !selectableAccounts.length) return;
+    selectSavedAccount(selectableAccounts[0]);
+  }, [game, selectSavedAccount, selectableAccounts, selectedSavedAccountId]);
 
   const applyTheme = useCallback((nextTheme: "light" | "dark") => {
     document.documentElement.classList.toggle("dark", nextTheme === "dark");
@@ -425,6 +469,10 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
         },
       });
       if (queueError) throw queueError;
+      const selected = selectableAccounts.find((account) => account.id === selectedSavedAccountId);
+      if (selected && !selected.local && isPermanent) {
+        void client.rpc("touch_riot_account", { p_account_id: selected.id });
+      }
       applyStatus(data as StatusPayload);
     } catch (caught) {
       setError(readableError(caught));
@@ -433,6 +481,58 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     } finally {
       setBusy(false);
     }
+  }
+
+  function newSavedAccount() {
+    if (game === "cs2") return;
+    const initial = createInitialSearchInput(game);
+    setForm(initial);
+    setIdentityName("");
+    setIdentityDetail("TR1");
+    setSelectedSavedAccountId(null);
+    setProfileMessage("");
+  }
+
+  async function saveCurrentProfile() {
+    if (game === "cs2") return;
+    setError("");
+    setProfileMessage("");
+    const parsed = searchSchema.safeParse({ ...form, displayName, contactValue });
+    if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? "Bilgileri kontrol et."); return; }
+    const preference: SavedGamePreference = {
+      game,
+      rankSystem: form.rankSystem,
+      rank: form.rank,
+      minRank: form.minRank,
+      maxRank: form.maxRank,
+      partySize: form.partySize,
+      targetSize: form.targetSize,
+      servers: form.servers,
+      queueTypes: form.queueTypes,
+      roles: form.roles,
+      maps: form.maps,
+    };
+    const selected = selectableAccounts.find((account) => account.id === selectedSavedAccountId);
+    if (isPermanent) {
+      const { data, error: saveError } = await getSupabaseBrowserClient().rpc("save_riot_account", {
+        p_account_id: selected && !selected.local ? selected.id : null,
+        p_riot_id: displayName,
+        p_game: game,
+        p_preferences: preference,
+      });
+      if (saveError) { setError(readableError(saveError)); return; }
+      if (selected?.local) removeGuestAccounts([selected.id]);
+      setSelectedSavedAccountId(String(data));
+      await refreshAccount();
+      setGuestAccounts(readGuestAccounts());
+      setProfileMessage("Profil hesabına kaydedildi.");
+      return;
+    }
+    const id = selected?.local ? selected.id : crypto.randomUUID();
+    upsertGuestAccount({ id, riotId: displayName, game, preference, updatedAt: new Date().toISOString() });
+    setGuestAccounts(readGuestAccounts());
+    setSelectedSavedAccountId(id);
+    setProfileMessage("Profil bu tarayıcıya kaydedildi.");
   }
 
   async function respond(accepted: boolean) {
@@ -509,6 +609,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
         <div className="topbar-right">
           <GameSelector disabled={view !== "home"} open={openTopbarSelect === "game"} onOpenChange={(open) => { setOpenTopbarSelect(open ? "game" : null); if (open) setOpenRankSelect(null); }} />
           <QueueSelector disabled={view !== "home"} game={game} servers={form.servers} queueTypes={form.queueTypes} maps={form.maps} onChange={updateQueueFilters} open={openTopbarSelect === "queue"} onOpenChange={(open) => { setOpenTopbarSelect(open ? "queue" : null); if (open) setOpenRankSelect(null); }} />
+          <AuthMenu disabled={view !== "home"} theme={theme} />
           <button type="button" className="theme-toggle" aria-label={theme === "dark" ? "Açık temaya geç" : "Koyu temaya geç"} onClick={() => { setOpenTopbarSelect(null); setOpenRankSelect(null); const next = theme === "dark" ? "light" : "dark"; setTheme(next); applyTheme(next); }}>
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
@@ -524,6 +625,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {activePlayerCount !== null ? <p className="active-player-count">Şu an <strong>{activePlayerCount}</strong> oyuncu arıyor</p> : null}
           </div>
           <form className="search-form" onSubmit={startSearch}>
+            {game !== "cs2" ? <SavedAccountPicker game={game} accounts={selectableAccounts} selectedId={selectedSavedAccountId} disabled={view !== "home"} onSelect={selectSavedAccount} onNew={newSavedAccount} onSave={() => void saveCurrentProfile()} /> : null}
+            {profileMessage ? <p className="profile-save-message"><Check size={14} />{profileMessage}</p> : null}
             {game === "cs2" ? (
               <div className="form-row identity-row">
                 <label className="field"><span>Steam görünen adı</span><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.slice(0, 32))} placeholder="Oyuncu adı" autoComplete="off" /></div></label>
@@ -563,9 +666,9 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
 
       {view === "searching" ? <section className="center-stage"><div className="searching-panel"><div className="matchmaking-badge"><Users size={34} /></div><span className="step-kicker">Eşleştirme sürüyor</span><h2>Takım arkadaşların aranıyor</h2><p>{rankLabel(form.minRank)} ve üzerindeki uygun oyunculara bakıyoruz.</p>{notice ? <div className="search-notice"><Info size={15} />{notice}</div> : null}<div className="search-stats"><div><span>Geçen süre</span><strong>{String(Math.floor(searchSeconds / 60)).padStart(2, "0")}:{String(searchSeconds % 60).padStart(2, "0")}</strong></div><div><span>Aranan</span><strong>{form.targetSize - form.partySize} oyuncu</strong></div><div><span>Sunucu</span><strong>{selectionLabel(config.servers, form.servers, "Sunucu")}</strong></div></div><button className="ghost-button" onClick={leave}><X size={17} /> Aramayı iptal et</button></div></section> : null}
 
-      {view === "proposal" ? <section className="center-stage"><div className="status-card proposal-card"><div className="proposal-top"><div className="match-icon"><Check size={28} /></div><div><span className="step-kicker">Eşleşme bulundu</span><h2>Bu takıma hazır mısın?</h2></div><div className="countdown"><Clock3 size={18} /><strong>{seconds}</strong><span>sn</span></div></div><div className="squad-list">{members.map((member) => <div className="squad-member" key={member.playerId}><div className="avatar">{member.displayName.charAt(0).toUpperCase()}</div><div className="member-main"><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)} · {member.partySize === 1 ? "Solo" : `${member.partySize} kişilik grup`}</span></div>{member.isMe ? <span className={`you-pill ${member.accepted ? "ready" : ""}`}>{member.accepted ? <Check size={14} /> : null}{member.accepted ? "Sen · Hazır" : "Sen"}</span> : member.accepted ? <span className="accepted"><Check size={15} /> Hazır</span> : <span className="waiting"><LoaderCircle className="spin" size={15} /> Bekleniyor</span>}</div>)}</div><p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>{error ? <div className="error-message"><X size={15} /> {error}</div> : null}<div className="proposal-actions"><button className="reject-button" disabled={busy || acceptedByMe} onClick={() => respond(false)}><X size={18} /> Reddet</button><button className={`accept-button ${acceptedByMe ? "confirmed" : ""}`} disabled={busy || acceptedByMe} onClick={() => respond(true)}>{busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}{acceptedByMe ? "Onaylandı" : "Kabul et"}</button></div></div></section> : null}
+      {view === "proposal" ? <section className="center-stage"><div className="status-card proposal-card"><div className="proposal-top"><div className="match-icon"><Check size={28} /></div><div><span className="step-kicker">Eşleşme bulundu</span><h2>Bu takıma hazır mısın?</h2></div><div className="countdown"><Clock3 size={18} /><strong>{seconds}</strong><span>sn</span></div></div><div className="squad-list">{members.map((member) => <div className="squad-member" key={member.playerId}><div className="avatar">{member.displayName.charAt(0).toUpperCase()}</div><div className="member-main"><strong>{member.displayName}</strong><span>{member.crewfindUsername ? `@${member.crewfindUsername} · ` : ""}{rankLabel(member.rank, member.rankSystem)} · {member.partySize === 1 ? "Solo" : `${member.partySize} kişilik grup`}</span></div>{member.isMe ? <span className={`you-pill ${member.accepted ? "ready" : ""}`}>{member.accepted ? <Check size={14} /> : null}{member.accepted ? "Sen · Hazır" : "Sen"}</span> : member.accepted ? <span className="accepted"><Check size={15} /> Hazır</span> : <span className="waiting"><LoaderCircle className="spin" size={15} /> Bekleniyor</span>}</div>)}</div><p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>{error ? <div className="error-message"><X size={15} /> {error}</div> : null}<div className="proposal-actions"><button className="reject-button" disabled={busy || acceptedByMe} onClick={() => respond(false)}><X size={18} /> Reddet</button><button className={`accept-button ${acceptedByMe ? "confirmed" : ""}`} disabled={busy || acceptedByMe} onClick={() => respond(true)}>{busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}{acceptedByMe ? "Onaylandı" : "Kabul et"}</button></div></div></section> : null}
 
-      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Steam bilgilerini" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName; const copyLabel = game === "cs2" && member.contactValue ? "Arkadaş kodunu kopyala" : game === "cs2" ? "Steam adını kopyala" : "Riot ID’yi kopyala"; const profileKey = member.displayName.trim().toLocaleLowerCase("tr-TR"); const profileState = lolProfiles[profileKey]; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div>{game === "league-of-legends" && profileState?.status === "found" && profileState.profile ? <div className="lol-profile-summary"><div><span>LeagueOfGraphs</span><strong>{profileState.profile.rank ? `${profileState.profile.rank.tier} · ${profileState.profile.rank.lp}` : "Dereceli bilgisi yok"}</strong></div>{profileState.profile.recentMatches.slice(0, 3).map((match, index) => <div className="recent-match" key={`${match.champion}-${index}`}><span className={match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "win" : "loss"}>{match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "G" : "M"}</span><strong>{match.champion}</strong><small>{match.kda}</small></div>)}</div> : null}{game === "league-of-legends" && profileState?.status === "not-found" ? <p className="profile-card-note">Harici profil bulunamadı.</p> : null}{game === "league-of-legends" && profileState?.status === "unavailable" ? <p className="profile-card-note">Profil bilgisi şu an alınamadı.</p> : null}<div className="player-card-actions"><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : copyLabel}</button>{game === "league-of-legends" && lolProfileEnabled ? <button className="profile-button" disabled={profileState?.status === "loading"} onClick={() => void loadLolProfile(member.displayName)}>{profileState?.status === "loading" ? <LoaderCircle className="spin" size={15} /> : <UserRoundSearch size={15} />}{profileState?.status === "found" ? "Profili yenile" : profileState?.status === "loading" ? "Yükleniyor" : "Profili göster"}</button> : null}</div></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
+      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Steam bilgilerini" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName; const copyLabel = game === "cs2" && member.contactValue ? "Arkadaş kodunu kopyala" : game === "cs2" ? "Steam adını kopyala" : "Riot ID’yi kopyala"; const profileKey = member.displayName.trim().toLocaleLowerCase("tr-TR"); const profileState = lolProfiles[profileKey]; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong>{member.crewfindUsername ? <small className="crewfind-username">@{member.crewfindUsername}</small> : null}<span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div>{game === "league-of-legends" && profileState?.status === "found" && profileState.profile ? <div className="lol-profile-summary"><div><span>LeagueOfGraphs</span><strong>{profileState.profile.rank ? `${profileState.profile.rank.tier} · ${profileState.profile.rank.lp}` : "Dereceli bilgisi yok"}</strong></div>{profileState.profile.recentMatches.slice(0, 3).map((match, index) => <div className="recent-match" key={`${match.champion}-${index}`}><span className={match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "win" : "loss"}>{match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "G" : "M"}</span><strong>{match.champion}</strong><small>{match.kda}</small></div>)}</div> : null}{game === "league-of-legends" && profileState?.status === "not-found" ? <p className="profile-card-note">Harici profil bulunamadı.</p> : null}{game === "league-of-legends" && profileState?.status === "unavailable" ? <p className="profile-card-note">Profil bilgisi şu an alınamadı.</p> : null}<div className="player-card-actions"><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : copyLabel}</button>{game === "league-of-legends" && lolProfileEnabled ? <button className="profile-button" disabled={profileState?.status === "loading"} onClick={() => void loadLolProfile(member.displayName)}>{profileState?.status === "loading" ? <LoaderCircle className="spin" size={15} /> : <UserRoundSearch size={15} />}{profileState?.status === "found" ? "Profili yenile" : profileState?.status === "loading" ? "Yükleniyor" : "Profili göster"}</button> : null}</div></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
     </main>
   );
 }

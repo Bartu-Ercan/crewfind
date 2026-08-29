@@ -12,6 +12,7 @@ export type Member = {
   roles?: string[];
   accepted?: boolean | null;
   isMe?: boolean;
+  crewfindUsername?: string | null;
 };
 
 export type ChatMessage = {
