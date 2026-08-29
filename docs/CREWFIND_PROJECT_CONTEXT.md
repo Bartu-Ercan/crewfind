@@ -200,6 +200,7 @@ Kademe renkleri:
 - Sunucu tekli seçimdir: Türkiye (`TR1`) veya EU West (`EUW1`); varsayılan Türkiye'dir.
 - Sıra tekli seçimdir: Dereceli Solo/Duo veya Dereceli Flex.
 - Solo/Duo araması daima `1 kişi + 1 takım arkadaşı` olarak çalışır; grup ve aranan kişi kontrolleri gösterilmez.
+- Solo/Duo rol kontrolü tek seçimlidir; başka role basınca önceki seçim otomatik olarak değişir ve bütün roller her zaman tıklanabilir kalır.
 - Flex'te grup büyüklüğü ve beş kişilik takım hedefi kontrolleri kullanılır.
 - Demir-Elmas arasında IV/III/II/I; ardından Ustalık, Üstatlık ve Şampiyonluk kullanılır.
 - Varsayılan rank Altın IV, minimum rank Gümüş IV'tür.
