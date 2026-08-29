@@ -672,6 +672,46 @@ h3,
   text-align: left;
 }
 
+.profile-check {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.profile-check.found {
+  color: var(--success);
+}
+
+.profile-check.not-found,
+.profile-check.unavailable {
+  color: var(--text-secondary);
+}
+
+.profile-check button {
+  min-height: 28px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.profile-check button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border));
+  color: var(--text-primary);
+}
+
 .rank-field {
   position: relative;
 }
@@ -1344,12 +1384,107 @@ h3,
   border-top: 1px solid var(--border);
 }
 
-.player-card button {
+.player-card-actions {
+  margin-top: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.player-card-actions button {
   min-height: 40px;
   margin-top: 16px;
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-secondary);
+}
+
+.player-card-actions button + button {
+  margin-top: 0;
+}
+
+.player-card-actions .profile-button {
+  color: var(--text-primary);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  background: color-mix(in srgb, var(--accent-soft) 42%, transparent);
+}
+
+.lol-profile-summary {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lol-profile-summary > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.lol-profile-summary > div:first-child span,
+.profile-card-note {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.lol-profile-summary > div:first-child strong {
+  margin: 0;
+  color: var(--text-secondary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 11px;
+  text-align: right;
+}
+
+.recent-match {
+  min-height: 24px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.recent-match > span {
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.recent-match > span.win {
+  color: var(--success);
+  background: color-mix(in srgb, var(--success) 14%, transparent);
+}
+
+.recent-match > span.loss {
+  color: var(--text-muted);
+  background: color-mix(in srgb, var(--text-muted) 12%, transparent);
+}
+
+.recent-match strong {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-body), sans-serif;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-match small {
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.profile-card-note {
+  margin: 14px 0 0;
 }
 
 .chat-panel {
@@ -1513,6 +1648,11 @@ h3,
 
   .identity-row {
     grid-template-columns: 1fr;
+  }
+
+  .profile-check {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .role-picker {

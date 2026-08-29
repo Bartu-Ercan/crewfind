@@ -10,6 +10,7 @@ Bu belge ileride uygulanacak Riot ve Steam hesap sahipliği doğrulamasının g�
 - Erişim ve yenileme tokenları yalnız gerekli süre boyunca şifreli sunucu depolamasında tutulur; loglara veya analitik olaylara yazılmaz.
 - API Evangelist deposu, üçüncü taraf oyuncu sorgu servisleri veya kullanıcı adı varlığına dayalı kontroller hesap sahipliği kanıtı olarak kullanılmaz.
 - Riot production/RSO onayı olmadan doğrulanmış rozeti veya doğrulama iddiası gösterilmez.
+- LeagueOfGraphs üzerinden alınan isteğe bağlı LoL profil özeti yalnız herkese açık hesap/rank bilgisi olarak etiketlenir; eşleştirme yetkisi veya sahiplik doğrulaması sağlamaz.
 
 ## Steam
 

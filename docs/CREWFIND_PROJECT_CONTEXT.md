@@ -218,6 +218,10 @@ Kademe renkleri:
 - Varsayılan rank Altın IV, minimum rank Gümüş IV'tür.
 - Grup, dolu rollerini Üst/Orman/Orta/Alt/Destek arasından seçer; roller eklenip kaldırılabilir ve arama anında seçili rol sayısı grup büyüklüğüne eşit olmalıdır.
 - Aynı role sahip iki grup aynı eşleşmeye alınmaz.
+- Riot ID sahipliği bu aşamada doğrulanmaz. İsteğe bağlı LeagueOfGraphs profil sorgusu yalnızca hesabın herkese açık profilinin bulunup bulunamadığını ve harici rank/son maç özetini gösterir.
+- Harici profil bilgisi eşleştirme kararını değiştirmez ve hiçbir yerde `doğrulanmış hesap` olarak sunulmaz.
+- Profil sorguları yalnız sunucu tarafındaki Parse.bot anahtarıyla yapılır; servis sağlayıcının kendi kotasına ek olarak CrewFind kullanıcı kotası uygulanır ve sonuç bir saat önbelleğe alınır.
+- Lobi kartı harici profili kullanıcı isterse açar. Kaynak kullanılamazsa mevcut kart ve matchmaking çalışmaya devam eder.
 
 ### Counter-Strike 2
 
@@ -261,7 +265,8 @@ Kademe renkleri:
 8. Tamamlandı: Lobi eksilme ve bağlamı koruyan otomatik yeniden arama.
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
-11. Sıradaki: Kontrollü yük testi.
+11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
+12. Sıradaki: Kontrollü yük testi.
 
 ## Riot Developer Portal
 

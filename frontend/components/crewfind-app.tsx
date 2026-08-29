@@ -14,12 +14,14 @@ import {
   Send,
   Sun,
   User,
+  UserRoundSearch,
   Users,
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
+import type { LolProfile } from "@/backend/lol-profile/profile";
 import { Brand } from "@/frontend/components/brand";
 import { GameSelector } from "@/frontend/components/game-selector";
 import { QueueSelector } from "@/frontend/components/queue-selector";
@@ -44,6 +46,10 @@ import {
 import { createInitialSearchInput, searchSchema, type SearchInput } from "@/shared/validation";
 
 type CrewFindAppProps = { game: GameId };
+type LolProfileState = {
+  status: "loading" | "found" | "not-found" | "unavailable";
+  profile?: LolProfile;
+};
 
 function normalizeMembers(members: Member[] | undefined) {
   return (members ?? []).map((member) => ({
@@ -78,6 +84,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [authReady, setAuthReady] = useState(false);
   const [notice, setNotice] = useState("");
   const [activePlayerCount, setActivePlayerCount] = useState<number | null>(null);
+  const [lolProfileEnabled, setLolProfileEnabled] = useState(false);
+  const [lolProfiles, setLolProfiles] = useState<Record<string, LolProfileState>>({});
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const resumeChecked = useRef(false);
   const statusRateLimitUntil = useRef(0);
@@ -139,6 +147,19 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     });
     return () => { active = false; };
   }, [demoMode, runtimeConfigured, turnstileEnabled]);
+
+  useEffect(() => {
+    if (game !== "league-of-legends" || demoMode) {
+      setLolProfileEnabled(false);
+      return;
+    }
+    let active = true;
+    void fetch("/api/lol-profile", { cache: "no-store" })
+      .then((response) => response.ok ? response.json() : null)
+      .then((payload) => { if (active) setLolProfileEnabled(payload?.enabled === true); })
+      .catch(() => { if (active) setLolProfileEnabled(false); });
+    return () => { active = false; };
+  }, [demoMode, game]);
 
   const cleanupTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -309,6 +330,49 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     }));
   }
 
+  async function getAccessToken() {
+    const client = getSupabaseBrowserClient();
+    const { data: sessionData } = await client.auth.getSession();
+    if (sessionData.session) return sessionData.session.access_token;
+
+    setNeedsCaptcha(true);
+    if (turnstileEnabled && !captchaToken) throw new Error("Güvenlik doğrulamasını tamamla.");
+    const { data, error: authError } = await client.auth.signInAnonymously(
+      turnstileEnabled ? { options: { captchaToken } } : undefined,
+    );
+    if (authError || !data.session) throw authError ?? new Error("Oturum başlatılamadı.");
+    setNeedsCaptcha(false);
+    setCaptchaToken("");
+    return data.session.access_token;
+  }
+
+  async function loadLolProfile(riotId: string) {
+    const key = riotId.trim().toLocaleLowerCase("tr-TR");
+    if (!key || !lolProfileEnabled || !runtimeConfigured) return;
+    setLolProfiles((current) => ({ ...current, [key]: { status: "loading" } }));
+
+    try {
+      const accessToken = await getAccessToken();
+      const response = await fetch("/api/lol-profile", {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ riotId, server: form.servers[0] ?? "tr1" }),
+      });
+      const payload = await response.json().catch(() => null);
+      if (response.ok && payload?.found && payload.profile) {
+        setLolProfiles((current) => ({ ...current, [key]: { status: "found", profile: payload.profile as LolProfile } }));
+        return;
+      }
+      if (response.ok && payload?.found === false) {
+        setLolProfiles((current) => ({ ...current, [key]: { status: "not-found" } }));
+        return;
+      }
+      setLolProfiles((current) => ({ ...current, [key]: { status: "unavailable" } }));
+    } catch {
+      setLolProfiles((current) => ({ ...current, [key]: { status: "unavailable" } }));
+    }
+  }
+
   async function startSearch(event: FormEvent) {
     event.preventDefault();
     setError("");
@@ -342,17 +406,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     }
     try {
       const client = getSupabaseBrowserClient();
-      const { data: sessionData } = await client.auth.getSession();
-      if (!sessionData.session) {
-        setNeedsCaptcha(true);
-        if (turnstileEnabled && !captchaToken) throw new Error("Güvenlik doğrulamasını tamamla.");
-        const { error: authError } = await client.auth.signInAnonymously(
-          turnstileEnabled ? { options: { captchaToken } } : undefined,
-        );
-        if (authError) throw authError;
-        setNeedsCaptcha(false);
-        setCaptchaToken("");
-      }
+      await getAccessToken();
       const { data, error: queueError } = await client.rpc("enqueue_and_attempt_match", {
         p_riot_id: payload.displayName,
         p_rank: payload.rank,
@@ -441,6 +495,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const representedPlayers = useMemo(() => members.reduce((total, member) => total + member.partySize, 0), [members]);
   const currentPlayerId = useMemo(() => members.find((member) => member.isMe)?.playerId ?? "me", [members]);
   const acceptedByMe = members.some((member) => member.isMe && member.accepted === true);
+  const currentLolProfile = lolProfiles[displayName.trim().toLocaleLowerCase("tr-TR")];
   const rankLabel = (value: number, memberRankSystem = form.rankSystem) => {
     const queue = memberRankSystem === "cs2-competitive" ? "competitive"
       : memberRankSystem === "cs2-premier" ? "premier" : selectedQueue;
@@ -475,7 +530,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
                 <label className="field"><span>Arkadaş kodu <small>(isteğe bağlı)</small></span><div className="riot-input"><Users size={15} /><input inputMode="numeric" value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="12345678" autoComplete="off" /></div></label>
               </div>
             ) : (
-              <div className="field"><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.replace(/#/g, "").slice(0, 16))} placeholder="OyuncuAdı" autoComplete="off" aria-label="Riot kullanıcı adı" /><div className="riot-tag"><span>#</span><input value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5))} placeholder="TR1" aria-label="Riot etiketi" autoComplete="off" /></div></div></div>
+              <div className="field"><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.replace(/#/g, "").slice(0, 16))} placeholder="OyuncuAdı" autoComplete="off" aria-label="Riot kullanıcı adı" /><div className="riot-tag"><span>#</span><input value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5))} placeholder="TR1" aria-label="Riot etiketi" autoComplete="off" /></div></div>{game === "league-of-legends" && lolProfileEnabled ? <div className={`profile-check ${currentLolProfile?.status ?? "idle"}`}><span>{currentLolProfile?.status === "found" ? `Profil bulundu${currentLolProfile.profile?.rank ? ` · ${currentLolProfile.profile.rank.tier} · ${currentLolProfile.profile.rank.lp}` : ""}` : currentLolProfile?.status === "not-found" ? "Profil bulunamadı; Riot ID’yi kontrol et." : currentLolProfile?.status === "unavailable" ? "Profil bilgisi şu an alınamadı." : "LeagueOfGraphs üzerinden isteğe bağlı kontrol"}</span><button type="button" disabled={!identityName.trim() || identityDetail.trim().length < 2 || currentLolProfile?.status === "loading" || (needsCaptcha && !captchaToken)} onClick={() => void loadLolProfile(displayName)}>{currentLolProfile?.status === "loading" ? <LoaderCircle className="spin" size={14} /> : <UserRoundSearch size={14} />}{currentLolProfile?.status === "loading" ? "Kontrol ediliyor" : "Profili kontrol et"}</button></div> : null}</div>
             )}
 
             {game === "cs2" && selectedQueue === "premier" ? (
@@ -510,7 +565,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
 
       {view === "proposal" ? <section className="center-stage"><div className="status-card proposal-card"><div className="proposal-top"><div className="match-icon"><Check size={28} /></div><div><span className="step-kicker">Eşleşme bulundu</span><h2>Bu takıma hazır mısın?</h2></div><div className="countdown"><Clock3 size={18} /><strong>{seconds}</strong><span>sn</span></div></div><div className="squad-list">{members.map((member) => <div className="squad-member" key={member.playerId}><div className="avatar">{member.displayName.charAt(0).toUpperCase()}</div><div className="member-main"><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)} · {member.partySize === 1 ? "Solo" : `${member.partySize} kişilik grup`}</span></div>{member.isMe ? <span className={`you-pill ${member.accepted ? "ready" : ""}`}>{member.accepted ? <Check size={14} /> : null}{member.accepted ? "Sen · Hazır" : "Sen"}</span> : member.accepted ? <span className="accepted"><Check size={15} /> Hazır</span> : <span className="waiting"><LoaderCircle className="spin" size={15} /> Bekleniyor</span>}</div>)}</div><p className="proposal-note">Temsil edilen toplam oyuncu: <strong>{representedPlayers}/{form.targetSize}</strong></p>{error ? <div className="error-message"><X size={15} /> {error}</div> : null}<div className="proposal-actions"><button className="reject-button" disabled={busy || acceptedByMe} onClick={() => respond(false)}><X size={18} /> Reddet</button><button className={`accept-button ${acceptedByMe ? "confirmed" : ""}`} disabled={busy || acceptedByMe} onClick={() => respond(true)}>{busy ? <LoaderCircle className="spin" size={18} /> : <Check size={18} />}{acceptedByMe ? "Onaylandı" : "Kabul et"}</button></div></div></section> : null}
 
-      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Steam bilgilerini" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName; const copyLabel = game === "cs2" && member.contactValue ? "Arkadaş kodunu kopyala" : game === "cs2" ? "Steam adını kopyala" : "Riot ID’yi kopyala"; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : copyLabel}</button></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
+      {view === "lobby" ? <section className="lobby-layout"><div className="lobby-main"><div className="lobby-heading"><div><span className="live-dot"><span /> Lobi hazır</span><h2>Takım tamamlandı</h2><p>{game === "cs2" ? "Steam bilgilerini" : "Riot ID’leri"} kopyala, oyuncuları ekle ve oyuna geç.</p></div><button className="ghost-button" onClick={leave}><LogOut size={17} /> Lobiden çık</button></div><div className="member-grid">{members.map((member) => { const copyValue = game === "cs2" ? member.contactValue ?? member.displayName : member.displayName; const copyLabel = game === "cs2" && member.contactValue ? "Arkadaş kodunu kopyala" : game === "cs2" ? "Steam adını kopyala" : "Riot ID’yi kopyala"; const profileKey = member.displayName.trim().toLocaleLowerCase("tr-TR"); const profileState = lolProfiles[profileKey]; return <article className="player-card" key={member.playerId}><div className="player-card-top"><div className="avatar large">{member.displayName.charAt(0).toUpperCase()}</div>{member.isMe ? <span className="you-pill">Sen</span> : null}</div><strong>{member.displayName}</strong><span>{rankLabel(member.rank, member.rankSystem)}</span><div className="card-meta"><Users size={14} /> {member.partySize === 1 ? "Solo" : `${member.partySize} kişiyi temsil ediyor`}</div>{game === "league-of-legends" && profileState?.status === "found" && profileState.profile ? <div className="lol-profile-summary"><div><span>LeagueOfGraphs</span><strong>{profileState.profile.rank ? `${profileState.profile.rank.tier} · ${profileState.profile.rank.lp}` : "Dereceli bilgisi yok"}</strong></div>{profileState.profile.recentMatches.slice(0, 3).map((match, index) => <div className="recent-match" key={`${match.champion}-${index}`}><span className={match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "win" : "loss"}>{match.result.toLocaleLowerCase("en-US").includes("vict") || match.result.toLocaleLowerCase("en-US").includes("win") ? "G" : "M"}</span><strong>{match.champion}</strong><small>{match.kda}</small></div>)}</div> : null}{game === "league-of-legends" && profileState?.status === "not-found" ? <p className="profile-card-note">Harici profil bulunamadı.</p> : null}{game === "league-of-legends" && profileState?.status === "unavailable" ? <p className="profile-card-note">Profil bilgisi şu an alınamadı.</p> : null}<div className="player-card-actions"><button onClick={() => copyContact(member)} disabled={!copyValue}>{copied === copyValue ? <Check size={15} /> : <Copy size={15} />}{copied === copyValue ? "Kopyalandı" : copyLabel}</button>{game === "league-of-legends" && lolProfileEnabled ? <button className="profile-button" disabled={profileState?.status === "loading"} onClick={() => void loadLolProfile(member.displayName)}>{profileState?.status === "loading" ? <LoaderCircle className="spin" size={15} /> : <UserRoundSearch size={15} />}{profileState?.status === "found" ? "Profili yenile" : profileState?.status === "loading" ? "Yükleniyor" : "Profili göster"}</button> : null}</div></article>; })}</div></div><aside className="chat-panel"><div className="chat-heading"><div><MessageCircle size={19} /><strong>Takım sohbeti</strong></div><span>{members.length} temsilci</span></div><div className="messages">{messages.map((item) => item.player_id === "system" ? <div className="system-message" key={item.id}>{item.body}</div> : (() => { const own = item.player_id === currentPlayerId || item.player_id === "me"; const name = item.riot_id ?? (own ? displayName : "Oyuncu"); return <div className={`message ${own ? "mine" : ""}`} key={item.id}><span>{own ? `Sen · ${name}` : name}</span><p>{item.body}</p><time>{new Date(item.created_at).toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })}</time></div>; })())}</div><form className="message-form" onSubmit={sendMessage}><input value={message} onChange={(event) => setMessage(event.target.value.slice(0, 500))} placeholder="Mesajını yaz..." /><button aria-label="Gönder"><Send size={18} /></button></form></aside></section> : null}
     </main>
   );
 }

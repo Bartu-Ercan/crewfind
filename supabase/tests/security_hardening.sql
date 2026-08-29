@@ -65,7 +65,8 @@ begin
     'public.respond_to_proposal(uuid,boolean)'::regprocedure,
     'public.leave_current()'::regprocedure,
     'public.send_lobby_message(uuid,text)'::regprocedure,
-    'public.get_active_player_count()'::regprocedure
+    'public.get_active_player_count()'::regprocedure,
+    'public.reserve_lol_profile_lookup()'::regprocedure
   ] loop
     if (select prosecdef from pg_proc where oid = signature) then
       raise exception '% SECURITY INVOKER değil', signature;
