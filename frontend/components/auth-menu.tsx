@@ -133,9 +133,9 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
 
   return (
     <div className="account-menu" ref={rootRef}>
-      <button className={`account-trigger ${isPermanent ? "signed-in" : ""}`} type="button" onClick={() => setOpen((value) => !value)}>
+      <button className={`account-trigger ${isPermanent ? "signed-in" : ""}`} type="button" aria-expanded={open} aria-label={overview?.username ? `${overview.username} hesap menüsü` : "Giriş menüsü"} onClick={() => setOpen((value) => !value)}>
         {overview?.avatarUrl ? <span className="account-avatar" style={{ backgroundImage: `url(${overview.avatarUrl})` }} /> : <UserRound size={15} />}
-        <span>{overview?.username ?? "Giriş yap"}</span>
+        <span>{overview?.username ?? "Giriş"}</span>
         <ChevronDown size={14} className={open ? "open" : ""} />
       </button>
       {open && isPermanent && overview ? (
