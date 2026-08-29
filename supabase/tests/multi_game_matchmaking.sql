@@ -50,6 +50,7 @@ begin
   );
   delete from public.queue_entries
   where player_id::text like '00000000-0000-0000-0000-00000000010%';
+  delete from private.rate_limit_buckets where action like 'enqueue:%';
 end;
 $$;
 
@@ -81,7 +82,7 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
 select public.enqueue_and_attempt_match('LolTwo#TR1', 12, 1, 8, 30, array['tr1'], array['solo-duo'], 2,
   '{"game":"league-of-legends","rankSystem":"lol-solo","contactValue":"LolTwo#TR1","roles":["top"],"maps":[]}'::jsonb);
 do $$ begin
-  if public.attempt_match() is not null then raise exception 'Çakışan LoL rolleri eşleşti'; end if;
+  if private.attempt_match() is not null then raise exception 'Çakışan LoL rolleri eşleşti'; end if;
 end $$;
 select pg_temp.clear_test_searches();
 
@@ -116,9 +117,9 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
 select public.enqueue_and_attempt_match('Steam Two', 7, 1, 4, 17, array['vienna'], array['competitive'], 2,
   '{"game":"cs2","rankSystem":"cs2-competitive","contactValue":"1234502","roles":[],"maps":["nuke"]}'::jsonb);
 do $$ begin
-  if public.attempt_match() is not null then raise exception 'Ortak haritasız CS2 oyuncuları eşleşti'; end if;
+  if private.attempt_match() is not null then raise exception 'Ortak haritasız CS2 oyuncuları eşleşti'; end if;
   update public.queue_entries set maps = array['mirage', 'nuke'] where player_id = '00000000-0000-0000-0000-000000000102';
-  if public.attempt_match() is null then raise exception 'Ortak haritalı CS2 oyuncuları eşleşmedi'; end if;
+  if private.attempt_match() is null then raise exception 'Ortak haritalı CS2 oyuncuları eşleşmedi'; end if;
 end $$;
 select pg_temp.clear_test_searches();
 
@@ -130,9 +131,9 @@ select pg_temp.as_user('00000000-0000-0000-0000-000000000102');
 select public.enqueue_and_attempt_match('Premier Two', 13000, 1, 13000, 50000, array['vienna'], array['premier'], 2,
   '{"game":"cs2","rankSystem":"cs2-premier","contactValue":"2234502","roles":[],"maps":[]}'::jsonb);
 do $$ begin
-  if public.attempt_match() is not null then raise exception 'Uyumsuz Premier aralıkları eşleşti'; end if;
+  if private.attempt_match() is not null then raise exception 'Uyumsuz Premier aralıkları eşleşti'; end if;
   update public.queue_entries set min_rank = 9500 where player_id = '00000000-0000-0000-0000-000000000102';
-  if public.attempt_match() is null then raise exception 'İki yönlü Premier aralığı eşleşmedi'; end if;
+  if private.attempt_match() is null then raise exception 'İki yönlü Premier aralığı eşleşmedi'; end if;
 end $$;
 select pg_temp.clear_test_searches();
 

@@ -25,8 +25,8 @@ npm install
 npm run dev
 ```
 
-Supabase bilgileri verilmezse uygulama otomatik olarak demo modunda çalışır. Geçerli bir
-`Oyuncu#TR1` Riot ID girerek bütün akış incelenebilir.
+Demo akışı yalnızca `NEXT_PUBLIC_DEMO_MODE=true` açıkça ayarlandığında çalışır. Supabase
+değişkenleri eksikse uygulama production akışını başlatmaz ve yapılandırma hatası gösterir.
 
 Aynı Wi-Fi ağındaki telefon veya başka bir bilgisayardan test etmek için:
 
@@ -43,7 +43,8 @@ Ardından `http://192.168.2.106:3001` adresini açın. Yerel IP değişirse
 2. `supabase/migrations/202607060001_initial.sql` migration dosyasını uygulayın.
 3. `.env.example` dosyasını `.env.local` olarak kopyalayıp proje URL ve publishable anahtarını ekleyin.
 4. `NEXT_PUBLIC_DEMO_MODE=false` değerini ayarlayın.
-5. `cleanup_stale_state()` fonksiyonunu Supabase Cron üzerinden dakikada bir çalışacak şekilde zamanlayın.
+5. Migration zincirini eksiksiz uygulayın. Stale state ve rate-limit temizliği son migration
+   tarafından Supabase Cron üzerinden zamanlanır.
 
 Yerel geliştirmede `NEXT_PUBLIC_TURNSTILE_ENABLED=false` kullanılabilir. Production öncesinde
 bu değer `true` yapılmalı, Cloudflare Turnstile site/secret anahtarları eklenmeli ve

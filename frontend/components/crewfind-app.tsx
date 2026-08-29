@@ -26,7 +26,7 @@ import { QueueSelector } from "@/frontend/components/queue-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
 import { RatingSelect } from "@/frontend/components/rating-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
-import { readableError } from "@/frontend/lib/error-messages";
+import { isRateLimitedError, rateLimitRetryAfter, readableError } from "@/frontend/lib/error-messages";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import {
   CS2_MAPS,
@@ -80,6 +80,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [activePlayerCount, setActivePlayerCount] = useState<number | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const resumeChecked = useRef(false);
+  const statusRateLimitUntil = useRef(0);
 
   const selectedQueue = form.queueTypes[0] ?? config.defaultQueue;
   const rankOptions = useMemo(() => ranksFor(game, selectedQueue), [game, selectedQueue]);
@@ -87,9 +88,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     ? identityName.trim() || identityDetail.trim()
     : `${identityName.trim()}#${identityDetail.trim()}`;
   const contactValue = game === "cs2" ? identityDetail.trim() : displayName;
-  const demoMode =
-    (process.env.NEXT_PUBLIC_DEMO_MODE ?? "true").trim().toLowerCase() !== "false" ||
-    !hasSupabaseConfig();
+  const demoMode = process.env.NEXT_PUBLIC_DEMO_MODE?.trim().toLowerCase() === "true";
+  const runtimeConfigured = hasSupabaseConfig();
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileFlag = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED;
   const turnstileEnabled = Boolean(turnstileSiteKey) &&
@@ -115,7 +115,18 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   }, [applyTheme]);
 
   useEffect(() => {
-    if (demoMode || !turnstileEnabled) {
+    if (demoMode) {
+      setNeedsCaptcha(false);
+      setAuthReady(true);
+      return;
+    }
+    if (!runtimeConfigured) {
+      setNeedsCaptcha(false);
+      setError("Supabase çevre değişkenleri eksik.");
+      setAuthReady(true);
+      return;
+    }
+    if (!turnstileEnabled) {
       setNeedsCaptcha(false);
       setAuthReady(true);
       return;
@@ -127,7 +138,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       setAuthReady(true);
     });
     return () => { active = false; };
-  }, [demoMode, turnstileEnabled]);
+  }, [demoMode, runtimeConfigured, turnstileEnabled]);
 
   const cleanupTimers = useCallback(() => {
     timers.current.forEach(clearTimeout);
@@ -165,21 +176,21 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   }, [game, router]);
 
   useEffect(() => {
-    if (demoMode || !authReady || resumeChecked.current) return;
+    if (demoMode || !runtimeConfigured || !authReady || resumeChecked.current) return;
     resumeChecked.current = true;
     let active = true;
     void getSupabaseBrowserClient().auth.getSession().then(async ({ data }) => {
       if (!active || !data.session) return;
       const { data: status, error: statusError } = await getSupabaseBrowserClient().rpc("get_my_status");
       if (!active) return;
-      if (statusError) setError(statusError.message);
+      if (statusError) setError(readableError(statusError));
       else if (status) applyStatus(status as StatusPayload);
     });
     return () => { active = false; };
-  }, [applyStatus, authReady, demoMode]);
+  }, [applyStatus, authReady, demoMode, runtimeConfigured]);
 
   useEffect(() => {
-    if (demoMode || view !== "home") return;
+    if (demoMode || !runtimeConfigured || view !== "home") return;
     let active = true;
     const refreshCount = async () => {
       const { data, error: countError } = await getSupabaseBrowserClient().rpc("get_active_player_count");
@@ -189,7 +200,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     void refreshCount();
     const interval = setInterval(() => void refreshCount(), 15_000);
     return () => { active = false; clearInterval(interval); };
-  }, [demoMode, view]);
+  }, [demoMode, runtimeConfigured, view]);
 
   useEffect(() => {
     if (view !== "searching") return;
@@ -204,19 +215,27 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   }, [view]);
 
   useEffect(() => {
-    if (demoMode || !["searching", "proposal", "lobby"].includes(view)) return;
+    if (demoMode || !runtimeConfigured || !["searching", "proposal", "lobby"].includes(view)) return;
     const poll = async () => {
+      if (Date.now() < statusRateLimitUntil.current) return;
       const { data, error: statusError } = await getSupabaseBrowserClient().rpc("get_my_status");
-      if (statusError) setError(statusError.message);
-      else if (data) applyStatus(data as StatusPayload);
+      if (statusError) {
+        if (isRateLimitedError(statusError)) {
+          statusRateLimitUntil.current = Date.now() + rateLimitRetryAfter(statusError) * 1_000;
+        }
+        setError(readableError(statusError));
+      } else if (data) {
+        setError("");
+        applyStatus(data as StatusPayload);
+      }
     };
     void poll();
     const interval = setInterval(() => void poll(), 1_500);
     return () => clearInterval(interval);
-  }, [applyStatus, demoMode, view]);
+  }, [applyStatus, demoMode, runtimeConfigured, view]);
 
   useEffect(() => {
-    if (demoMode || view !== "lobby" || !lobbyId) return;
+    if (demoMode || !runtimeConfigured || view !== "lobby" || !lobbyId) return;
     const client = getSupabaseBrowserClient();
     void client.from("messages").select("id, player_id, riot_id, body, created_at")
       .eq("lobby_id", lobbyId).order("created_at")
@@ -227,7 +246,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       (payload) => setMessages((current) => [...current, payload.new as ChatMessage]),
     ).subscribe();
     return () => { void client.removeChannel(channel); };
-  }, [demoMode, lobbyId, view]);
+  }, [demoMode, lobbyId, runtimeConfigured, view]);
 
   const makeDemoMembers = useCallback(() => {
     const missing = form.targetSize - form.partySize;
@@ -315,6 +334,12 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       }, 200));
       return;
     }
+    if (!runtimeConfigured) {
+      setError("Supabase çevre değişkenleri eksik.");
+      setBusy(false);
+      setLogoHighlight("crew");
+      return;
+    }
     try {
       const client = getSupabaseBrowserClient();
       const { data: sessionData } = await client.auth.getSession();
@@ -374,14 +399,20 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       p_proposal_id: proposalId,
       p_accept: accepted,
     });
-    if (responseError) setError(responseError.message);
+    if (responseError) setError(readableError(responseError));
     else applyStatus(data as StatusPayload);
     setBusy(false);
   }
 
   async function leave() {
     cleanupTimers();
-    if (!demoMode) await getSupabaseBrowserClient().rpc("leave_current");
+    if (!demoMode && runtimeConfigured) {
+      const { error: leaveError } = await getSupabaseBrowserClient().rpc("leave_current");
+      if (leaveError) {
+        setError(readableError(leaveError));
+        return;
+      }
+    }
     setView("home"); setLogoHighlight("crew"); setNotice(""); setMembers([]); setMessages([]);
     setProposalId(null); setLobbyId(null);
   }
@@ -396,7 +427,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       return;
     }
     const { error: sendError } = await getSupabaseBrowserClient().rpc("send_lobby_message", { p_lobby_id: lobbyId, p_body: body });
-    if (sendError) setError(sendError.message);
+    if (sendError) setError(readableError(sendError));
   }
 
   async function copyContact(member: Member) {
@@ -470,7 +501,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {game === "cs2" && selectedQueue === "competitive" ? <p className="filter-summary">{selectionLabel(CS2_MAPS, form.maps, "Harita seçilmedi")}</p> : null}
             {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <div className="turnstile-wrap"><Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken("")} onError={() => setError("Güvenlik doğrulaması yüklenemedi. Sayfayı yenile.")} options={{ appearance: "interaction-only", theme, size: "flexible" }} /></div> : null}
             {error ? <div className="error-message"><X size={15} /> {error}</div> : null}
-            <button className="primary-button" disabled={busy || !authReady || (needsCaptcha && !captchaToken)}>{busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}{busy ? "Aranıyor..." : "Oyuncu ara"}</button>
+            <button className="primary-button" disabled={busy || !authReady || (!demoMode && !runtimeConfigured) || (needsCaptcha && !captchaToken)}>{busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}{busy ? "Aranıyor..." : "Oyuncu ara"}</button>
           </form>
         </section>
       ) : null}

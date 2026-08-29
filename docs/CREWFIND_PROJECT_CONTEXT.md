@@ -173,6 +173,18 @@ Kademe renkleri:
 - `searching` kayıtları ve süresi dolmamış pending teklifler temsil ettikleri `party_size` toplamıyla sayılır.
 - Ana ekranda 15 saniyede bir güncellenir; veri alınamazsa sahte veya sıfır kabul edilen bir değer gösterilmez.
 
+## Güvenlik Modeli
+
+- Data API'ye açık RPC adları geriye uyumludur; public fonksiyonlar `SECURITY INVOKER` sarmalayıcıdır.
+- Veri değiştiren ayrıcalıklı iş mantığı ve lobi üyelik yardımcısı Data API'ye kapalı `private` şemasındadır.
+- Arama, durum, teklif, terk etme, mesaj ve global sayaç çağrıları sabit pencere kotalarıyla sınırlandırılır.
+- Kotalar: arama 6/dakika ve 30/saat; durum 60/dakika; teklif 10/dakika; terk etme 10/dakika; mesaj 12/10 saniye ve 60/dakika; global sayaç IP başına 20/dakika.
+- IP adresleri düz metin kaydedilmez; `pgcrypto` ve veritabanında tutulan özel salt ile hash'lenir.
+- Kota yanıtı HTTP 429, güvenli `RATE_LIMITED` kodu ve `Retry-After` bilgisi taşır.
+- Normal durum sorgusu 1,5 saniyede bir devam eder; kota alınırsa istemci belirtilen süre boyunca bekleyip otomatik sürdürür.
+- Demo modu yalnızca `NEXT_PUBLIC_DEMO_MODE=true` ile açılır. Eksik production değişkenleri sahte moda düşmez.
+- Turnstile secret yalnız Supabase Auth ayarında tutulur; istemciye yalnız site key ve Supabase publishable key verilir.
+
 ## Scrollbar
 
 - Varsayılan tarayıcı scrollbar'ı gizlenir.
@@ -248,8 +260,8 @@ Kademe renkleri:
 7. Tamamlandı: Dropdown click-outside ve mouse-leave davranışı.
 8. Tamamlandı: Lobi eksilme ve bağlamı koruyan otomatik yeniden arama.
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
-10. Sıradaki: Güvenlik sertleştirmesi; rate limiting, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
-11. Yük testi; kullanıcı sayısı arttıkça, düşük öncelik.
+10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
+11. Sıradaki: Kontrollü yük testi.
 
 ## Riot Developer Portal
 
