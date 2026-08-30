@@ -1,0 +1,148 @@
+// @vitest-environment jsdom
+import { act } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { AuthMenu } from "./auth-menu";
+
+const mocks = vi.hoisted(() => ({
+  user: null as { is_anonymous: boolean } | null,
+  refresh: vi.fn(async () => undefined),
+  signInWithOAuth: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
+  linkIdentity: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
+  updateUser: vi.fn(async () => ({ data: { user: null }, error: null as null | { code: string; message: string } })),
+}));
+
+vi.mock("@marsidev/react-turnstile", () => ({
+  Turnstile: () => <div data-testid="turnstile" />,
+}));
+
+vi.mock("@/backend/supabase/browser-client", () => ({
+  getSupabaseBrowserClient: () => ({
+    auth: {
+      linkIdentity: mocks.linkIdentity,
+      signInWithOAuth: mocks.signInWithOAuth,
+      signOut: vi.fn(async () => ({ error: null })),
+      updateUser: mocks.updateUser,
+    },
+  }),
+}));
+
+vi.mock("@/frontend/components/account-provider", () => ({
+  useAccount: () => ({
+    user: mocks.user,
+    overview: null,
+    isPermanent: false,
+    loading: false,
+    refresh: mocks.refresh,
+  }),
+}));
+
+const reactTestGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean };
+
+beforeAll(() => {
+  reactTestGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+});
+
+afterAll(() => {
+  delete reactTestGlobal.IS_REACT_ACT_ENVIRONMENT;
+});
+
+describe("AuthMenu", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+  let previousGoogle: string | undefined;
+  let previousTurnstile: string | undefined;
+  let previousSiteKey: string | undefined;
+
+  beforeEach(() => {
+    previousGoogle = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED;
+    previousTurnstile = process.env.NEXT_PUBLIC_TURNSTILE_ENABLED;
+    previousSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED = "true";
+    process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = "true";
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "test-site-key";
+    mocks.signInWithOAuth.mockClear();
+    mocks.linkIdentity.mockClear();
+    mocks.updateUser.mockClear();
+    mocks.user = null;
+    container = document.createElement("div");
+    document.body.append(container);
+    root = createRoot(container);
+  });
+
+  afterEach(async () => {
+    await act(async () => root.unmount());
+    container.remove();
+    process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED = previousGoogle;
+    process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = previousTurnstile;
+    process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = previousSiteKey;
+    localStorage.clear();
+    sessionStorage.clear();
+  });
+
+  async function openMenu() {
+    await act(async () => root.render(<AuthMenu disabled={false} theme="light" />));
+    const trigger = container.querySelector<HTMLButtonElement>("button[aria-haspopup='dialog']")!;
+    await act(async () => trigger.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  }
+
+  it("shows only Google and email without mounting Turnstile initially", async () => {
+    await openMenu();
+
+    expect(container.textContent).toContain("Google ile devam et");
+    expect(container.textContent).not.toContain("Discord");
+    expect(container.textContent).not.toContain("Riot ile");
+    expect(container.querySelectorAll(".google-mark path")).toHaveLength(4);
+    expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
+  });
+
+  it("starts Google OAuth without a CAPTCHA token", async () => {
+    await openMenu();
+    const terms = container.querySelector<HTMLInputElement>(".terms-check input")!;
+    const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
+    const google = [...container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent?.includes("Google ile devam et"))!;
+
+    await act(async () => email.focus());
+    expect(container.querySelector("[data-testid='turnstile']")).not.toBeNull();
+    await act(async () => terms.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    await act(async () => google.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+
+    expect(mocks.signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: "google" }));
+    expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
+  });
+
+  it("mounts Turnstile only after email interaction", async () => {
+    await openMenu();
+    const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
+
+    await act(async () => email.focus());
+
+    expect(container.querySelector("[data-testid='turnstile']")).not.toBeNull();
+  });
+
+  it("moves an existing email upgrade to the login flow with a clear message", async () => {
+    mocks.user = { is_anonymous: true };
+    mocks.updateUser.mockResolvedValueOnce({
+      data: { user: null },
+      error: { code: "email_exists", message: "A user with this email address has already been registered" },
+    });
+    await openMenu();
+    const register = [...container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "Hesap oluştur")!;
+    await act(async () => register.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
+    const terms = container.querySelector<HTMLInputElement>(".terms-check input")!;
+
+    await act(async () => {
+      email.value = "registered@example.com";
+      email.dispatchEvent(new Event("input", { bubbles: true }));
+      terms.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+
+    expect(container.textContent).toContain("Bu e-posta zaten kayıtlı. Giriş yap veya parolanı yenile.");
+    expect(container.querySelector<HTMLButtonElement>(".auth-mode-switch button[aria-pressed='true']")?.textContent).toBe("Giriş yap");
+    expect(container.querySelector("input[type='password']")).not.toBeNull();
+  });
+});

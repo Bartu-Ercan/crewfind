@@ -37,6 +37,17 @@ export function isRateLimitedError(caught: unknown) {
     (typeof error.message === "string" && error.message.includes("RATE_LIMITED"));
 }
 
+export function isEmailAlreadyRegisteredError(caught: unknown) {
+  const error = errorLike(caught);
+  const code = typeof error.code === "string" ? error.code.toLowerCase() : "";
+  const message = typeof error.message === "string" ? error.message.toLowerCase() : "";
+
+  return code === "email_exists" ||
+    code === "email_address_already_exists" ||
+    message.includes("email address has already been registered") ||
+    message.includes("email already registered");
+}
+
 export function readableError(caught: unknown) {
   const error = errorLike(caught);
   const message =
@@ -48,6 +59,10 @@ export function readableError(caught: unknown) {
 
   if (isRateLimitedError(caught)) {
     return "Çok fazla istek gönderildi. Kısa süre sonra tekrar dene.";
+  }
+
+  if (isEmailAlreadyRegisteredError(caught)) {
+    return "Bu e-posta zaten kayıtlı. Giriş yap veya parolanı yenile.";
   }
 
   if (

@@ -67,6 +67,8 @@ describe("SavedAccountPicker", () => {
     await renderPicker();
     const trigger = container.querySelector<HTMLButtonElement>("button[aria-haspopup='menu']")!;
     expect(trigger.textContent).toContain("Kayıtlı hesaplar");
+    expect(trigger.parentElement?.className).toContain("right-[18px]");
+    expect(trigger.parentElement?.className).not.toContain("left-[18px]");
     expect(container.textContent).not.toContain("Kaydet");
     expect(container.textContent).not.toContain("Yeni hesap");
 
@@ -74,6 +76,8 @@ describe("SavedAccountPicker", () => {
     const menu = container.querySelector("[role='menu']");
     expect(menu).not.toBeNull();
     expect(menu?.className).toContain("bottom-[calc(100%+6px)]");
+    expect(menu?.className).toContain("right-[-18px]");
+    expect(menu?.className).toContain("origin-bottom-right");
     expect(container.querySelectorAll("[role='menuitemradio']")).toHaveLength(2);
   });
 

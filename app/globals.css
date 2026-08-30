@@ -1757,11 +1757,13 @@ h3,
 .auth-heading strong { font-family: var(--font-heading); font-size: 22px; line-height: 1.1; }
 .auth-heading > button,
 .modal-close { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--text-secondary); background: var(--bg); }
+.auth-heading > button:focus-visible,
+.modal-close:focus-visible { outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
 .auth-description { margin: -6px 0 18px; color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
 .auth-mode-switch { margin-bottom: 18px; padding: 3px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
 .auth-mode-switch button { min-height: 34px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 11px; font-weight: 700; }
 .auth-mode-switch button.selected { background: var(--surface); color: var(--text-primary); }
-.social-auth { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.social-auth { display: grid; grid-template-columns: 1fr; gap: 8px; }
 .social-auth button,
 .auth-submit {
   min-height: 40px;
@@ -1777,7 +1779,13 @@ h3,
   font-weight: 700;
 }
 
-.provider-letter { width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 11px; }
+.social-auth button:focus-visible,
+.auth-submit:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  outline-offset: 2px;
+}
+
+.google-mark { width: 18px; height: 18px; flex: 0 0 auto; }
 .auth-divider { display: flex; align-items: center; gap: 8px; margin: 12px 0; color: var(--text-muted); font-size: 10px; }
 .auth-divider span { flex: 1; height: 1px; background: var(--border); }
 .auth-form { gap: 9px; }

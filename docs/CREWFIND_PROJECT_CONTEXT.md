@@ -135,6 +135,7 @@ Kademe renkleri:
 - Turnstile yalnızca yeni anonim oturum gerektiğinde yüklenir; mevcut oturumu olan kullanıcıya gösterilmez.
 - Widget `interaction-only` görünümünü kullanır ve yalnızca Cloudflare etkileşim istediğinde görünür.
 - Yeni oturum gerektiğinde doğrulama tokenı oluşmadan arama butonu aktif olmaz.
+- Hesap modalında Turnstile yalnız e-posta kayıt, parola girişi veya parola sıfırlama alanıyla etkileşim kurulunca yüklenir; Google OAuth akışında gösterilmez ve kullanılmaz.
 
 ## Lobi Davranışı
 
@@ -248,18 +249,18 @@ Kademe renkleri:
 ## Kalıcı Hesap ve Kayıtlı Riot Profilleri
 
 - Misafir matchmaking ana akış olarak çalışmaya devam eder; giriş zorunlu değildir.
-- Kalıcı hesaplarda Google, Discord ve doğrulanmış e-posta/parola girişleri kullanılır. Riot ile giriş yalnız Production ve RSO onayı sonrasında görünür.
+- Kalıcı hesaplarda Google ve doğrulanmış e-posta/parola girişleri kullanılır. Discord ve Riot girişleri ilgili onay ve kurulumlar tamamlanana kadar görünmez.
 - Anonim kullanıcı yeni bir kimlik bağladığında aynı Supabase UUID'si korunur; aktif arama ve lobi kaybolmaz.
 - Aktif arama, teklif veya lobi sırasında hesap değiştirme, çıkış ve kayıtlı oyun profili değiştirme engellenir.
 - CrewFind kullanıcı adı 3-20 karakterdir; harf, sayı ve `_` kabul eder ve büyük/küçük harfe duyarsız benzersizdir.
 - Kalıcı kullanıcı en fazla 10 Riot hesabı saklar. Her hesap VALORANT ve LoL için ayrı tam arama tercihi taşıyabilir.
 - RSO öncesindeki Riot hesapları yalnız `Kullanıcı beyanı` olarak gösterilir; doğrulanmış rozeti kullanılmaz.
-- VALORANT ve LoL Riot ID alanlarının sol üstünde yalnız kayıt varsa görünen, alanın arkasından çıkan küçük `Kayıtlı hesaplar` sekmesi bulunur; CS2 bu sistemin dışında kalır.
+- VALORANT ve LoL Riot ID alanlarının sağ üstünde yalnız kayıt varsa görünen, alanın arkasından çıkan küçük `Kayıtlı hesaplar` sekmesi bulunur; CS2 bu sistemin dışında kalır.
 - Kayıtlı hesap paneli inputun üstüne açılır. Son kullanılan hesap ilk sıradadır; seçim Riot ID ile tam arama tercihini forma yükler. Hesap ekleme ve silme yalnız `/hesabim` sayfasında yapılır.
 - Riot ID elle değiştirilirse önceki kayıt seçimi temizlenir; kayıtlı hesap sessizce yeniden adlandırılmaz.
 - Başarılı arama sonrasında kullanılan Riot ID ve tam arama tercihi otomatik kaydedilir. Başarısız arama kayıt oluşturmaz; kayıt hatası başlamış aramayı iptal etmez. Ayrı `Kaydet` kontrolü kullanılmaz.
 - Misafir kayıtları versionlanmış localStorage verisidir; kalıcı hesaba geçişte yalnız kullanıcının seçtikleri buluta aktarılır.
-- Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google, Discord ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Riot girişi RSO onayına kadar gizlidir.
+- Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Discord ve Riot girişleri hazır olana kadar gizlidir.
 - Parola sınırı 8-72 karakterdir. Sözleşme kabulü kullanıcı tarafından açıkça verilmeden kaydedilmez.
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
 - Gizlilik ve kullanım koşulları sürümlüdür; hesap oluştururken kabul zamanı kalıcı profilde saklanır.
@@ -285,7 +286,7 @@ Kademe renkleri:
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
-12. Devam ediyor: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulanıyor; Google/Discord OAuth ve özel SMTP sağlayıcı kimlik bilgilerini bekliyor.
+12. Devam ediyor: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulanıyor; Google OAuth ve özel SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
 13. Sonraki: Hesap sağlayıcıları tamamlandıktan sonra kontrollü yük testi.
 
 ## Riot Developer Portal

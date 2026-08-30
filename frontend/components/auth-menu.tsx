@@ -13,10 +13,21 @@ import {
   AUTH_TERMS_STORAGE_KEY,
   buildAuthCallbackUrl,
 } from "@/frontend/lib/auth-flow";
-import { readableError } from "@/frontend/lib/error-messages";
+import { isEmailAlreadyRegisteredError, readableError } from "@/frontend/lib/error-messages";
 import { TERMS_VERSION } from "@/frontend/types/account";
 
 type AuthMode = "login" | "register" | "reset" | "set-password";
+
+function GoogleMark() {
+  return (
+    <svg className="google-mark" viewBox="0 0 18 18" aria-hidden="true">
+      <path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.716v2.259h2.909c1.702-1.567 2.684-3.874 2.684-6.616Z" />
+      <path fill="#34A853" d="M9 18c2.43 0 4.468-.806 5.956-2.179l-2.909-2.259c-.806.54-1.836.859-3.047.859-2.344 0-4.328-1.585-5.037-3.714H.956v2.332A9 9 0 0 0 9 18Z" />
+      <path fill="#FBBC05" d="M3.963 10.707A5.42 5.42 0 0 1 3.682 9c0-.593.102-1.17.281-1.707V4.961H.956A9 9 0 0 0 0 9c0 1.452.347 2.827.956 4.039l3.007-2.332Z" />
+      <path fill="#EA4335" d="M9 3.579c1.322 0 2.508.454 3.441 1.346l2.581-2.581C13.464.892 11.43 0 9 0A9 9 0 0 0 .956 4.961l3.007 2.332C4.672 5.164 6.656 3.579 9 3.579Z" />
+    </svg>
+  );
+}
 
 const FOCUSABLE = [
   "a[href]",
@@ -35,6 +46,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accepted, setAccepted] = useState(false);
+  const [emailFlowStarted, setEmailFlowStarted] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -49,13 +61,13 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
   const turnstileEnabled = Boolean(turnstileSiteKey) && process.env.NEXT_PUBLIC_TURNSTILE_ENABLED !== "false";
   const googleEnabled = process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
-  const discordEnabled = process.env.NEXT_PUBLIC_DISCORD_AUTH_ENABLED === "true";
-  const socialEnabled = googleEnabled || discordEnabled;
+  const socialEnabled = googleEnabled;
   const authModalOpen = open && (!isPermanent || mode === "set-password");
   const signedPopoverOpen = open && isPermanent && Boolean(overview) && mode !== "set-password";
   const anonymousEmailUpgrade = mode === "register" && Boolean(user?.is_anonymous);
   const passwordVisible = mode === "login" || mode === "set-password" || (mode === "register" && !user?.is_anonymous);
   const captchaRequired = turnstileEnabled && (mode === "login" || mode === "reset" || (mode === "register" && !user?.is_anonymous));
+  const captchaVisible = captchaRequired && emailFlowStarted;
 
   useEffect(() => {
     const shouldSetPassword = sessionStorage.getItem(AUTH_MODAL_MODE_STORAGE_KEY) === "set-password"
@@ -130,6 +142,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     setMode(nextMode);
     setPassword("");
     setAccepted(false);
+    setEmailFlowStarted(false);
     resetFeedback();
     resetCaptcha();
   }
@@ -145,8 +158,10 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     return buildAuthCallbackUrl(window.location.origin, intent, window.location.pathname);
   }
 
-  async function social(provider: "google" | "discord") {
+  async function social() {
     resetFeedback();
+    setEmailFlowStarted(false);
+    resetCaptcha();
     if (!accepted) {
       setError("Gizlilik ve kullanım koşullarını kabul et.");
       return;
@@ -156,8 +171,8 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     const client = getSupabaseBrowserClient();
     const shouldLink = mode === "register" && Boolean(user?.is_anonymous);
     const result = shouldLink
-      ? await client.auth.linkIdentity({ provider, options: { redirectTo: callbackUrl("oauth-link") } })
-      : await client.auth.signInWithOAuth({ provider, options: { redirectTo: callbackUrl("oauth-login") } });
+      ? await client.auth.linkIdentity({ provider: "google", options: { redirectTo: callbackUrl("oauth-link") } })
+      : await client.auth.signInWithOAuth({ provider: "google", options: { redirectTo: callbackUrl("oauth-login") } });
     if (result.error) {
       localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
       localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
@@ -172,6 +187,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     event.preventDefault();
     resetFeedback();
     if (captchaRequired && !captchaToken) {
+      setEmailFlowStarted(true);
       setError("Güvenlik doğrulamasını tamamla.");
       return;
     }
@@ -234,6 +250,12 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         if (emailError) {
           localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
           localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
+          if (isEmailAlreadyRegisteredError(emailError)) {
+            setMode("login");
+            setPassword("");
+            setAccepted(false);
+            setEmailFlowStarted(false);
+          }
           setError(readableError(emailError));
         } else {
           setMessage("E-posta doğrulama bağlantısı gönderildi. Bağlantıdan sonra parolanı oluştur.");
@@ -331,16 +353,15 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
             ) : null}
             {mode !== "reset" && mode !== "set-password" && socialEnabled ? (
               <div className="social-auth">
-                {googleEnabled ? <button type="button" disabled={busy} onClick={() => void social("google")}><span className="provider-letter">G</span> Google ile devam et</button> : null}
-                {discordEnabled ? <button type="button" disabled={busy} onClick={() => void social("discord")}><span className="provider-letter">D</span> Discord ile devam et</button> : null}
+                {googleEnabled ? <button type="button" disabled={busy} onClick={() => void social()}><GoogleMark /> Google ile devam et</button> : null}
               </div>
             ) : null}
             {mode !== "reset" && mode !== "set-password" && socialEnabled ? <div className="auth-divider"><span />veya<span /></div> : null}
             <form className="auth-form" onSubmit={submitEmail}>
-              {mode !== "set-password" ? <label><span>E-posta</span><div><Mail size={15} /><input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="mail@ornek.com" /></div></label> : null}
-              {passwordVisible ? <label><span>{mode === "set-password" ? "Yeni parola" : "Parola"}</span><div><KeyRound size={15} /><input type="password" required minLength={8} maxLength={72} autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="En az 8 karakter" /></div></label> : null}
+              {mode !== "set-password" ? <label><span>E-posta</span><div><Mail size={15} /><input type="email" required autoComplete="email" value={email} onFocus={() => setEmailFlowStarted(true)} onChange={(event) => setEmail(event.target.value)} placeholder="mail@ornek.com" /></div></label> : null}
+              {passwordVisible ? <label><span>{mode === "set-password" ? "Yeni parola" : "Parola"}</span><div><KeyRound size={15} /><input type="password" required minLength={8} maxLength={72} autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onFocus={() => setEmailFlowStarted(true)} onChange={(event) => setPassword(event.target.value)} placeholder="En az 8 karakter" /></div></label> : null}
               {mode === "register" || (mode === "login" && socialEnabled) ? <label className="terms-check"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} /><span><Link href="/kullanim-kosullari">Kullanım Koşulları</Link> ve <Link href="/gizlilik">Gizlilik Politikası</Link>nı kabul ediyorum.</span></label> : null}
-              {captchaRequired && turnstileSiteKey ? <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik doğrulaması yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ appearance: "interaction-only", theme, size: "flexible" }} /> : null}
+              {captchaVisible && turnstileSiteKey ? <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik doğrulaması yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ appearance: "interaction-only", theme, size: "flexible" }} /> : null}
               <div aria-live="polite">
                 {error ? <p className="auth-feedback error"><X size={14} />{error}</p> : null}
                 {message ? <p className="auth-feedback success"><Check size={14} />{message}</p> : null}

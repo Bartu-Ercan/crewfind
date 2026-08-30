@@ -80,7 +80,7 @@ export function SavedAccountPicker({ accounts, selectedId, disabled, onSelect }:
   }
 
   return (
-    <div className="absolute -top-[21px] left-[18px] z-30" ref={rootRef}>
+    <div className="absolute -top-[21px] right-[18px] z-10" ref={rootRef}>
       <button
         ref={triggerRef}
         type="button"
@@ -88,7 +88,7 @@ export function SavedAccountPicker({ accounts, selectedId, disabled, onSelect }:
         aria-controls={menuId}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="inline-flex h-6 items-center gap-1.5 rounded-t-[9px] rounded-b-[3px] border border-b-0 border-[var(--border)] bg-[var(--surface)] px-2.5 text-[10px] font-semibold text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--accent)_36%,transparent)] disabled:opacity-50 motion-reduce:transition-none"
+        className="inline-flex h-6 items-center gap-1.5 rounded-t-[9px] rounded-b-none border border-b-0 border-[var(--border)] bg-[color-mix(in_srgb,var(--surface)_92%,var(--accent-soft))] px-2.5 text-[10px] font-semibold text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color-mix(in_srgb,var(--accent)_36%,transparent)] disabled:opacity-50 motion-reduce:transition-none"
         onClick={() => setOpen((value) => !value)}
         onKeyDown={handleTriggerKeyDown}
       >
@@ -101,7 +101,7 @@ export function SavedAccountPicker({ accounts, selectedId, disabled, onSelect }:
           id={menuId}
           role="menu"
           aria-label="Kayıtlı Riot hesapları"
-          className="absolute bottom-[calc(100%+6px)] left-0 max-h-[min(240px,42dvh)] w-[min(300px,calc(100vw-32px))] origin-bottom-left overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 animate-[account-popover-in_140ms_ease-out] motion-reduce:animate-none"
+          className="absolute bottom-[calc(100%+6px)] right-[-18px] max-h-[min(240px,42dvh)] w-[min(300px,calc(100vw-32px))] origin-bottom-right overflow-y-auto rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-1.5 animate-[account-popover-in_140ms_ease-out] motion-reduce:animate-none"
         >
           {accounts.map((account, index) => {
             const selected = account.id === selectedId;
