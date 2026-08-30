@@ -3,7 +3,14 @@
 import { LoaderCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/backend/supabase/browser-client";
-import { TERMS_VERSION } from "@/frontend/types/account";
+import {
+  AUTH_MODAL_MODE_STORAGE_KEY,
+  AUTH_NEEDS_PASSWORD_STORAGE_KEY,
+  AUTH_PENDING_INTENT_STORAGE_KEY,
+  callbackNeedsPassword,
+  parseAuthCallbackIntent,
+  sanitizeAuthNext,
+} from "@/frontend/lib/auth-flow";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
@@ -12,13 +19,29 @@ export default function AuthCallbackPage() {
     const complete = async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
-      const next = url.searchParams.get("next")?.startsWith("/") ? url.searchParams.get("next")! : "/valorant";
-      const client = getSupabaseBrowserClient();
-      if (code) {
-        const { error: exchangeError } = await client.auth.exchangeCodeForSession(code);
-        if (exchangeError) { setError("Giriş bağlantısı geçersiz veya süresi dolmuş."); return; }
+      const intent = parseAuthCallbackIntent(url.searchParams.get("intent"));
+      const next = sanitizeAuthNext(url.searchParams.get("next"));
+      if (!intent) {
+        setError("Giriş isteği geçersiz.");
+        return;
       }
-      localStorage.setItem("crewfind-auth-terms", TERMS_VERSION);
+      const expectedIntent = localStorage.getItem(AUTH_PENDING_INTENT_STORAGE_KEY);
+      if (!code && expectedIntent !== intent) {
+        setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
+        return;
+      }
+      const client = getSupabaseBrowserClient();
+      const { data: { session }, error: sessionError } = await client.auth.getSession();
+      const codeWasConsumed = !new URL(window.location.href).searchParams.has("code");
+      if (sessionError || !session || session.user.is_anonymous || !codeWasConsumed) {
+        setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
+        return;
+      }
+      if (callbackNeedsPassword(intent)) {
+        sessionStorage.setItem(AUTH_MODAL_MODE_STORAGE_KEY, "set-password");
+        localStorage.setItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY, "true");
+      }
+      localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
       window.location.replace(next);
     };
     void complete();

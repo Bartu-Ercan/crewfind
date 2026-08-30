@@ -1043,7 +1043,9 @@ h3,
 
 @media (prefers-reduced-motion: reduce) {
   .matchmaking-badge::after,
-  .matchmaking-badge svg {
+  .matchmaking-badge svg,
+  .account-popover,
+  .account-popover.auth-modal {
     animation: none;
   }
 }
@@ -1704,6 +1706,33 @@ h3,
 .account-disabled-note { color: var(--text-muted); font-size: 10px; }
 .account-disabled-note { display: block; padding: 6px 10px 0; }
 
+.auth-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #0c1110 68%, transparent);
+}
+
+.account-popover.auth-modal {
+  position: relative;
+  inset: auto;
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  padding: 32px;
+  overflow-y: auto;
+  border-radius: 20px;
+  background: var(--surface);
+  animation: auth-modal-in 140ms ease-out;
+}
+
+@keyframes auth-modal-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .auth-heading,
 .auth-heading > div,
 .social-auth,
@@ -1728,7 +1757,11 @@ h3,
 .auth-heading strong { font-family: var(--font-heading); font-size: 22px; line-height: 1.1; }
 .auth-heading > button,
 .modal-close { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 50%; color: var(--text-secondary); background: var(--bg); }
-.social-auth { gap: 8px; }
+.auth-description { margin: -6px 0 18px; color: var(--text-secondary); font-size: 12px; line-height: 1.55; }
+.auth-mode-switch { margin-bottom: 18px; padding: 3px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+.auth-mode-switch button { min-height: 34px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 11px; font-weight: 700; }
+.auth-mode-switch button.selected { background: var(--surface); color: var(--text-primary); }
+.social-auth { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .social-auth button,
 .auth-submit {
   min-height: 40px;
@@ -1761,9 +1794,10 @@ h3,
 .auth-feedback { margin: 0; padding: 9px 11px; display: flex; align-items: flex-start; gap: 7px; border-radius: 12px; font-size: 11px; line-height: 1.4; }
 .auth-feedback.error { color: var(--error); background: color-mix(in srgb, var(--error) 9%, transparent); }
 .auth-feedback.success { color: var(--success); background: color-mix(in srgb, var(--success) 9%, transparent); }
-.auth-switch { margin-top: 10px; display: flex; justify-content: space-between; }
+.auth-switch { min-height: 20px; margin-top: 10px; display: flex; justify-content: center; }
 .auth-switch button { padding: 0; border: 0; background: transparent; font-size: 10px; font-weight: 600; }
-.auth-legal { display: none; }
+.auth-legal { margin: 14px 0 0; color: var(--text-muted); font-size: 9px; text-align: center; }
+.auth-legal a { color: inherit; }
 
 .saved-account-field { display: flex; flex-direction: column; gap: 7px; text-align: left; }
 .saved-account-field > span { color: var(--text-muted); font-size: 11px; font-weight: 600; }
@@ -1829,6 +1863,19 @@ h3,
 .provider-list button { background: transparent; color: var(--text-primary); }
 .provider-list span > button { width: 22px; min-height: 22px; padding: 0; justify-content: center; border: 0; color: var(--text-muted); }
 .riot-account-section { margin-top: 0; }
+.riot-account-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.riot-account-add-trigger { min-height: 34px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 10px; font-weight: 700; }
+.riot-account-add-trigger:hover { color: var(--text-primary); border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+.riot-account-add-form { padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; border: 1px solid var(--border); border-radius: 16px; background: color-mix(in srgb, var(--surface) 78%, var(--bg)); }
+.riot-account-add-form label { display: grid; gap: 6px; color: var(--text-muted); font-size: 10px; font-weight: 600; }
+.riot-account-add-form label > div { min-height: 40px; padding: 0 12px; display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+.riot-account-add-form input { flex: 1; border: 0; outline: 0; background: transparent; color: var(--text-primary); font-size: 12px; }
+.riot-game-picker { min-height: 40px; padding: 3px; display: flex; align-items: center; gap: 3px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg); }
+.riot-game-picker button { min-height: 32px; padding: 0 10px; border: 0; border-radius: 999px; background: transparent; color: var(--text-muted); font-size: 9px; font-weight: 700; }
+.riot-game-picker button.selected { background: var(--accent-soft); color: var(--accent); }
+.riot-account-add-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
+.riot-account-add-actions button { min-height: 34px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text-secondary); font-size: 10px; font-weight: 700; }
+.riot-account-add-actions button[type="submit"] { border-color: transparent; background: var(--accent); color: var(--on-accent); }
 .riot-account-list { display: grid; grid-template-columns: 1fr; gap: 0; }
 .riot-account-list article { min-height: 64px; padding: 10px 0; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); background: transparent; }
 .riot-account-list article > div:first-child { min-width: 0; flex: 1; display: grid; gap: 3px; }
@@ -1908,12 +1955,19 @@ h3,
   }
 
   .account-trigger { width: 34px; justify-content: center; padding: 0; }
-  .auth-popover { position: fixed; top: 76px; left: 16px; right: 16px; width: auto; }
+  .account-popover.auth-modal { position: relative; inset: auto; width: calc(100vw - 32px); max-height: calc(100dvh - 32px); padding: 24px; }
+  .auth-modal-backdrop { padding: 16px; }
+  .social-auth { grid-template-columns: 1fr; }
   .saved-account-actions,
   .account-settings-grid,
   .riot-account-list { grid-template-columns: 1fr; }
   .settings-form { grid-template-columns: 1fr; }
   .settings-form > button { width: 100%; }
+  .riot-account-heading { align-items: stretch; flex-direction: column; }
+  .riot-account-add-trigger { align-self: flex-start; }
+  .riot-account-add-form { grid-template-columns: 1fr; }
+  .riot-game-picker { width: 100%; }
+  .riot-game-picker button { flex: 1; }
   .save-profile-button { justify-content: center; min-height: 40px; }
   .account-page-shell,
   .legal-shell { width: calc(100% - 32px); padding-top: 20px; }

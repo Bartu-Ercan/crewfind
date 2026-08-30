@@ -3,6 +3,7 @@
 import type { User } from "@supabase/supabase-js";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getSupabaseBrowserClient, hasSupabaseConfig } from "@/backend/supabase/browser-client";
+import { AUTH_TERMS_STORAGE_KEY } from "@/frontend/lib/auth-flow";
 import { TERMS_VERSION, type AccountOverview } from "@/frontend/types/account";
 
 type AccountContextValue = {
@@ -51,6 +52,14 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
     const { data: current, error } = await client.rpc("get_account_overview");
     if (!error && current?.username) {
       setOverview(current as AccountOverview);
+      localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
+      setLoading(false);
+      return;
+    }
+    const acceptedTermsVersion = localStorage.getItem(AUTH_TERMS_STORAGE_KEY)
+      ?? String(nextUser.user_metadata?.terms_version ?? "");
+    if (error || acceptedTermsVersion !== TERMS_VERSION) {
+      setOverview(null);
       setLoading(false);
       return;
     }
@@ -60,6 +69,7 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       p_terms_version: TERMS_VERSION,
     });
     setOverview(initializeError ? null : initialized as AccountOverview);
+    if (!initializeError) localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
     setLoading(false);
   }, []);
 

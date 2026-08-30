@@ -1,6 +1,6 @@
 "use client";
 
-import { Turnstile } from "@marsidev/react-turnstile";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import {
   Check,
   Clock3,
@@ -32,7 +32,7 @@ import { RankSelect } from "@/frontend/components/rank-select";
 import { RatingSelect } from "@/frontend/components/rating-select";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { isRateLimitedError, rateLimitRetryAfter, readableError } from "@/frontend/lib/error-messages";
-import { readGuestAccounts, removeGuestAccounts, upsertGuestAccount } from "@/frontend/lib/guest-accounts";
+import { readGuestAccounts, upsertGuestAccount } from "@/frontend/lib/guest-accounts";
 import type { GuestRiotAccount, SavedGamePreference } from "@/frontend/types/account";
 import type { ChatMessage, Member, StatusPayload, View } from "@/frontend/types/crewfind";
 import {
@@ -63,9 +63,29 @@ function normalizeMembers(members: Member[] | undefined) {
   }));
 }
 
+function normalizeRiotId(riotId: string) {
+  return riotId.trim().toLocaleLowerCase("tr-TR");
+}
+
+function savedPreference(input: SearchInput): SavedGamePreference {
+  return {
+    game: input.game,
+    rankSystem: input.rankSystem,
+    rank: input.rank,
+    minRank: input.minRank,
+    maxRank: input.maxRank,
+    partySize: input.partySize,
+    targetSize: input.targetSize,
+    servers: input.servers,
+    queueTypes: input.queueTypes,
+    roles: input.roles,
+    maps: input.maps,
+  };
+}
+
 export function CrewFindApp({ game }: CrewFindAppProps) {
   const router = useRouter();
-  const { overview, isPermanent, refresh: refreshAccount } = useAccount();
+  const { user, overview, isPermanent, refresh: refreshAccount } = useAccount();
   const config = GAME_CONFIGS[game];
   const [view, setView] = useState<View>("home");
   const [form, setForm] = useState<SearchInput>(() => createInitialSearchInput(game));
@@ -76,6 +96,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [logoHighlight, setLogoHighlight] = useState<"crew" | "find">("crew");
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [error, setError] = useState("");
+  const [identityError, setIdentityError] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [proposalId, setProposalId] = useState<string | null>(null);
   const [lobbyId, setLobbyId] = useState<string | null>(null);
@@ -94,10 +115,10 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [lolProfiles, setLolProfiles] = useState<Record<string, LolProfileState>>({});
   const [guestAccounts, setGuestAccounts] = useState<GuestRiotAccount[]>([]);
   const [selectedSavedAccountId, setSelectedSavedAccountId] = useState<string | null>(null);
-  const [profileMessage, setProfileMessage] = useState("");
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const resumeChecked = useRef(false);
   const statusRateLimitUntil = useRef(0);
+  const turnstileRef = useRef<TurnstileInstance | null>(null);
 
   const selectedQueue = form.queueTypes[0] ?? config.defaultQueue;
   const rankOptions = useMemo(() => ranksFor(game, selectedQueue), [game, selectedQueue]);
@@ -116,6 +137,9 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     const cloud = (overview?.riotAccounts ?? []).filter((account) =>
       account.preferences.some((preference) => preference.game === game),
     );
+    if (isPermanent) {
+      return cloud.sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
+    }
     const local = guestAccounts.filter((account) => account.game === game).map((account) => ({
       id: account.id,
       riotId: account.riotId,
@@ -124,8 +148,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
       preferences: [account.preference],
       local: true,
     }));
-    return [...cloud, ...local].sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
-  }, [game, guestAccounts, overview?.riotAccounts]);
+    return local.sort((a, b) => (b.lastUsedAt ?? "").localeCompare(a.lastUsedAt ?? ""));
+  }, [game, guestAccounts, isPermanent, overview?.riotAccounts]);
 
   useEffect(() => {
     setForm(createInitialSearchInput(game));
@@ -134,7 +158,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     setOpenRankSelect(null);
     setOpenTopbarSelect(null);
     setSelectedSavedAccountId(null);
-    setProfileMessage("");
+    setIdentityError(false);
   }, [game]);
 
   useEffect(() => { setGuestAccounts(readGuestAccounts()); }, [game, overview]);
@@ -147,13 +171,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     setIdentityDetail(separator > 0 ? account.riotId.slice(separator + 1) : "TR1");
     setForm({ ...preference, game, displayName: "", contactValue: "" });
     setSelectedSavedAccountId(account.id);
-    setProfileMessage("");
+    setIdentityError(false);
   }, [game]);
-
-  useEffect(() => {
-    if (game === "cs2" || selectedSavedAccountId || !selectableAccounts.length) return;
-    selectSavedAccount(selectableAccounts[0]);
-  }, [game, selectSavedAccount, selectableAccounts, selectedSavedAccountId]);
 
   const applyTheme = useCallback((nextTheme: "light" | "dark") => {
     document.documentElement.classList.toggle("dark", nextTheme === "dark");
@@ -191,6 +210,13 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     });
     return () => { active = false; };
   }, [demoMode, runtimeConfigured, turnstileEnabled]);
+
+  useEffect(() => {
+    if (!user) return;
+    setNeedsCaptcha(false);
+    setCaptchaToken("");
+    turnstileRef.current?.reset();
+  }, [user]);
 
   useEffect(() => {
     if (game !== "league-of-legends" || demoMode) {
@@ -384,9 +410,14 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     const { data, error: authError } = await client.auth.signInAnonymously(
       turnstileEnabled ? { options: { captchaToken } } : undefined,
     );
-    if (authError || !data.session) throw authError ?? new Error("Oturum başlatılamadı.");
+    if (authError || !data.session) {
+      setCaptchaToken("");
+      turnstileRef.current?.reset();
+      throw authError ?? new Error("Oturum başlatılamadı.");
+    }
     setNeedsCaptcha(false);
     setCaptchaToken("");
+    turnstileRef.current?.reset();
     return data.session.access_token;
   }
 
@@ -417,16 +448,64 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     }
   }
 
+  async function persistSuccessfulSearch(payload: SearchInput) {
+    if (payload.game === "cs2" || demoMode) return;
+    const preference = savedPreference(payload);
+    const selected = selectableAccounts.find((account) => account.id === selectedSavedAccountId);
+    const selectedMatches = selected && normalizeRiotId(selected.riotId) === normalizeRiotId(payload.displayName);
+
+    try {
+      if (isPermanent) {
+        const client = getSupabaseBrowserClient();
+        const { data, error: saveError } = await client.rpc("save_riot_account", {
+          p_account_id: selectedMatches && !selected.local ? selected.id : null,
+          p_riot_id: payload.displayName,
+          p_game: payload.game,
+          p_preferences: preference,
+        });
+        if (saveError || !data) {
+          if (saveError?.message.includes("10 Riot")) setNotice("Arama başladı. Kayıt sınırına ulaştın; hesaplarını Hesabım sayfasından yönet.");
+          return;
+        }
+        const savedId = String(data);
+        setSelectedSavedAccountId(savedId);
+        await client.rpc("touch_riot_account", { p_account_id: savedId });
+        await refreshAccount();
+        return;
+      }
+
+      const normalized = normalizeRiotId(payload.displayName);
+      const alreadySaved = guestAccounts.some((account) => account.game === payload.game && normalizeRiotId(account.riotId) === normalized);
+      if (!alreadySaved && guestAccounts.length >= 10) {
+        setNotice("Arama başladı. Yerel kayıt sınırı nedeniyle en eski hesabın kaldırıldı.");
+      }
+      const saved = upsertGuestAccount({
+        id: crypto.randomUUID(),
+        riotId: payload.displayName,
+        game: payload.game,
+        preference,
+        updatedAt: new Date().toISOString(),
+      });
+      setGuestAccounts(readGuestAccounts());
+      setSelectedSavedAccountId(saved.id);
+    } catch {
+      // Matchmaking success must not depend on optional profile persistence.
+    }
+  }
+
   async function startSearch(event: FormEvent) {
     event.preventDefault();
     setError("");
+    setIdentityError(false);
     setNotice("");
-    const payload = { ...form, displayName, contactValue };
-    const parsed = searchSchema.safeParse(payload);
+    const parsed = searchSchema.safeParse({ ...form, displayName, contactValue });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Bilgileri kontrol et.");
+      const firstIssue = parsed.error.issues[0];
+      setIdentityError(firstIssue?.path[0] === "displayName" || firstIssue?.path[0] === "contactValue");
+      setError(firstIssue?.message ?? "Bilgileri kontrol et.");
       return;
     }
+    const payload = parsed.data;
     setLogoHighlight("find");
     setBusy(true);
     setSearchSeconds(0);
@@ -469,11 +548,8 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
         },
       });
       if (queueError) throw queueError;
-      const selected = selectableAccounts.find((account) => account.id === selectedSavedAccountId);
-      if (selected && !selected.local && isPermanent) {
-        void client.rpc("touch_riot_account", { p_account_id: selected.id });
-      }
       applyStatus(data as StatusPayload);
+      void persistSuccessfulSearch(payload);
     } catch (caught) {
       setError(readableError(caught));
       setView("home");
@@ -481,58 +557,6 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     } finally {
       setBusy(false);
     }
-  }
-
-  function newSavedAccount() {
-    if (game === "cs2") return;
-    const initial = createInitialSearchInput(game);
-    setForm(initial);
-    setIdentityName("");
-    setIdentityDetail("TR1");
-    setSelectedSavedAccountId(null);
-    setProfileMessage("");
-  }
-
-  async function saveCurrentProfile() {
-    if (game === "cs2") return;
-    setError("");
-    setProfileMessage("");
-    const parsed = searchSchema.safeParse({ ...form, displayName, contactValue });
-    if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? "Bilgileri kontrol et."); return; }
-    const preference: SavedGamePreference = {
-      game,
-      rankSystem: form.rankSystem,
-      rank: form.rank,
-      minRank: form.minRank,
-      maxRank: form.maxRank,
-      partySize: form.partySize,
-      targetSize: form.targetSize,
-      servers: form.servers,
-      queueTypes: form.queueTypes,
-      roles: form.roles,
-      maps: form.maps,
-    };
-    const selected = selectableAccounts.find((account) => account.id === selectedSavedAccountId);
-    if (isPermanent) {
-      const { data, error: saveError } = await getSupabaseBrowserClient().rpc("save_riot_account", {
-        p_account_id: selected && !selected.local ? selected.id : null,
-        p_riot_id: displayName,
-        p_game: game,
-        p_preferences: preference,
-      });
-      if (saveError) { setError(readableError(saveError)); return; }
-      if (selected?.local) removeGuestAccounts([selected.id]);
-      setSelectedSavedAccountId(String(data));
-      await refreshAccount();
-      setGuestAccounts(readGuestAccounts());
-      setProfileMessage("Profil hesabına kaydedildi.");
-      return;
-    }
-    const id = selected?.local ? selected.id : crypto.randomUUID();
-    upsertGuestAccount({ id, riotId: displayName, game, preference, updatedAt: new Date().toISOString() });
-    setGuestAccounts(readGuestAccounts());
-    setSelectedSavedAccountId(id);
-    setProfileMessage("Profil bu tarayıcıya kaydedildi.");
   }
 
   async function respond(accepted: boolean) {
@@ -625,15 +649,13 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {activePlayerCount !== null ? <p className="active-player-count">Şu an <strong>{activePlayerCount}</strong> oyuncu arıyor</p> : null}
           </div>
           <form className="search-form" onSubmit={startSearch}>
-            {game !== "cs2" ? <SavedAccountPicker game={game} accounts={selectableAccounts} selectedId={selectedSavedAccountId} disabled={view !== "home"} onSelect={selectSavedAccount} onNew={newSavedAccount} onSave={() => void saveCurrentProfile()} /> : null}
-            {profileMessage ? <p className="profile-save-message"><Check size={14} />{profileMessage}</p> : null}
             {game === "cs2" ? (
               <div className="form-row identity-row">
-                <label className="field"><span>Steam görünen adı</span><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.slice(0, 32))} placeholder="Oyuncu adı" autoComplete="off" /></div></label>
+                <label className="field"><span>Steam görünen adı</span><div className={`riot-input ${identityError ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => { setIdentityError(false); setIdentityName(event.target.value.slice(0, 32)); }} placeholder="Oyuncu adı" autoComplete="off" /></div></label>
                 <label className="field"><span>Arkadaş kodu <small>(isteğe bağlı)</small></span><div className="riot-input"><Users size={15} /><input inputMode="numeric" value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/\D/g, "").slice(0, 12))} placeholder="12345678" autoComplete="off" /></div></label>
               </div>
             ) : (
-              <div className="field"><div className={`riot-input ${error ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => setIdentityName(event.target.value.replace(/#/g, "").slice(0, 16))} placeholder="OyuncuAdı" autoComplete="off" aria-label="Riot kullanıcı adı" /><div className="riot-tag"><span>#</span><input value={identityDetail} onChange={(event) => setIdentityDetail(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5))} placeholder="TR1" aria-label="Riot etiketi" autoComplete="off" /></div></div>{game === "league-of-legends" && lolProfileEnabled ? <div className={`profile-check ${currentLolProfile?.status ?? "idle"}`}><span>{currentLolProfile?.status === "found" ? `Profil bulundu${currentLolProfile.profile?.rank ? ` · ${currentLolProfile.profile.rank.tier} · ${currentLolProfile.profile.rank.lp}` : ""}` : currentLolProfile?.status === "not-found" ? "Profil bulunamadı; Riot ID’yi kontrol et." : currentLolProfile?.status === "unavailable" ? "Profil bilgisi şu an alınamadı." : "LeagueOfGraphs üzerinden isteğe bağlı kontrol"}</span><button type="button" disabled={!identityName.trim() || identityDetail.trim().length < 2 || currentLolProfile?.status === "loading" || (needsCaptcha && !captchaToken)} onClick={() => void loadLolProfile(displayName)}>{currentLolProfile?.status === "loading" ? <LoaderCircle className="spin" size={14} /> : <UserRoundSearch size={14} />}{currentLolProfile?.status === "loading" ? "Kontrol ediliyor" : "Profili kontrol et"}</button></div> : null}</div>
+              <div className="field"><div className="relative"><SavedAccountPicker accounts={selectableAccounts} selectedId={selectedSavedAccountId} disabled={view !== "home"} onSelect={selectSavedAccount} /><div className={`riot-input ${identityError ? "has-error" : identityName ? "is-valid" : ""}`}><User size={15} /><input value={identityName} onChange={(event) => { setIdentityError(false); setSelectedSavedAccountId(null); setIdentityName(event.target.value.replace(/#/g, "").slice(0, 16)); }} placeholder="OyuncuAdı" autoComplete="off" aria-label="Riot kullanıcı adı" /><div className="riot-tag"><span>#</span><input value={identityDetail} onChange={(event) => { setIdentityError(false); setSelectedSavedAccountId(null); setIdentityDetail(event.target.value.replace(/[^\p{L}\p{N}]/gu, "").slice(0, 5)); }} placeholder="TR1" aria-label="Riot etiketi" autoComplete="off" /></div></div></div>{game === "league-of-legends" && lolProfileEnabled ? <div className={`profile-check ${currentLolProfile?.status ?? "idle"}`}><span>{currentLolProfile?.status === "found" ? `Profil bulundu${currentLolProfile.profile?.rank ? ` · ${currentLolProfile.profile.rank.tier} · ${currentLolProfile.profile.rank.lp}` : ""}` : currentLolProfile?.status === "not-found" ? "Profil bulunamadı; Riot ID’yi kontrol et." : currentLolProfile?.status === "unavailable" ? "Profil bilgisi şu an alınamadı." : "LeagueOfGraphs üzerinden isteğe bağlı kontrol"}</span><button type="button" disabled={!identityName.trim() || identityDetail.trim().length < 2 || currentLolProfile?.status === "loading" || (needsCaptcha && !captchaToken)} onClick={() => void loadLolProfile(displayName)}>{currentLolProfile?.status === "loading" ? <LoaderCircle className="spin" size={14} /> : <UserRoundSearch size={14} />}{currentLolProfile?.status === "loading" ? "Kontrol ediliyor" : "Profili kontrol et"}</button></div> : null}</div>
             )}
 
             {game === "cs2" && selectedQueue === "premier" ? (
@@ -657,7 +679,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {game === "league-of-legends" && selectedQueue === "solo-duo" ? null : <div className="field"><span>Kaç kişi arıyorsunuz?</span><div className="party-picker search-count-picker">{[1, 2, 3, 4].map((requested) => { const unavailable = requested > 5 - form.partySize; return <button type="button" key={requested} className={form.targetSize - form.partySize === requested ? "selected" : ""} disabled={unavailable} onClick={() => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))}>{form.targetSize - form.partySize === requested ? `${requested} kişi` : requested}</button>; })}</div></div>}
 
             {game === "cs2" && selectedQueue === "competitive" ? <p className="filter-summary">{selectionLabel(CS2_MAPS, form.maps, "Harita seçilmedi")}</p> : null}
-            {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <div className="turnstile-wrap"><Turnstile siteKey={turnstileSiteKey} onSuccess={setCaptchaToken} onExpire={() => setCaptchaToken("")} onError={() => setError("Güvenlik doğrulaması yüklenemedi. Sayfayı yenile.")} options={{ appearance: "interaction-only", theme, size: "flexible" }} /></div> : null}
+            {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <div className="turnstile-wrap"><Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik doğrulaması yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ appearance: "interaction-only", theme, size: "flexible" }} /></div> : null}
             {error ? <div className="error-message"><X size={15} /> {error}</div> : null}
             <button className="primary-button" disabled={busy || !authReady || (!demoMode && !runtimeConfigured) || (needsCaptcha && !captchaToken)}>{busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}{busy ? "Aranıyor..." : "Oyuncu ara"}</button>
           </form>

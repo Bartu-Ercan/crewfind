@@ -254,9 +254,13 @@ Kademe renkleri:
 - CrewFind kullanıcı adı 3-20 karakterdir; harf, sayı ve `_` kabul eder ve büyük/küçük harfe duyarsız benzersizdir.
 - Kalıcı kullanıcı en fazla 10 Riot hesabı saklar. Her hesap VALORANT ve LoL için ayrı tam arama tercihi taşıyabilir.
 - RSO öncesindeki Riot hesapları yalnız `Kullanıcı beyanı` olarak gösterilir; doğrulanmış rozeti kullanılmaz.
-- VALORANT ve LoL formunda kayıtlı hesap seçici bulunur; CS2 bu sistemin dışında kalır.
-- Form değişiklikleri kayıtlı profili otomatik değiştirmez; kullanıcı ayrı kaydetme işlemi yapar.
+- VALORANT ve LoL Riot ID alanlarının sol üstünde yalnız kayıt varsa görünen, alanın arkasından çıkan küçük `Kayıtlı hesaplar` sekmesi bulunur; CS2 bu sistemin dışında kalır.
+- Kayıtlı hesap paneli inputun üstüne açılır. Son kullanılan hesap ilk sıradadır; seçim Riot ID ile tam arama tercihini forma yükler. Hesap ekleme ve silme yalnız `/hesabim` sayfasında yapılır.
+- Riot ID elle değiştirilirse önceki kayıt seçimi temizlenir; kayıtlı hesap sessizce yeniden adlandırılmaz.
+- Başarılı arama sonrasında kullanılan Riot ID ve tam arama tercihi otomatik kaydedilir. Başarısız arama kayıt oluşturmaz; kayıt hatası başlamış aramayı iptal etmez. Ayrı `Kaydet` kontrolü kullanılmaz.
 - Misafir kayıtları versionlanmış localStorage verisidir; kalıcı hesaba geçişte yalnız kullanıcının seçtikleri buluta aktarılır.
+- Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google, Discord ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Riot girişi RSO onayına kadar gizlidir.
+- Parola sınırı 8-72 karakterdir. Sözleşme kabulü kullanıcı tarafından açıkça verilmeden kaydedilmez.
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
 - Gizlilik ve kullanım koşulları sürümlüdür; hesap oluştururken kabul zamanı kalıcı profilde saklanır.
 
@@ -281,7 +285,7 @@ Kademe renkleri:
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
-12. Devam ediyor: Kalıcı hesap, e-posta girişi ve çoklu Riot profili uygulandı; Google/Discord OAuth ve özel SMTP sağlayıcı kimlik bilgilerini bekliyor.
+12. Devam ediyor: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulanıyor; Google/Discord OAuth ve özel SMTP sağlayıcı kimlik bilgilerini bekliyor.
 13. Sonraki: Hesap sağlayıcıları tamamlandıktan sonra kontrollü yük testi.
 
 ## Riot Developer Portal

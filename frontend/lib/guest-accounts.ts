@@ -22,13 +22,20 @@ export function upsertGuestAccount(account: GuestRiotAccount) {
   const accounts = readGuestAccounts();
   const normalized = account.riotId.trim().toLocaleLowerCase("tr-TR");
   const existing = accounts.findIndex((item) =>
-    item.id === account.id || (
-      item.game === account.game && item.riotId.trim().toLocaleLowerCase("tr-TR") === normalized
-    ),
+    item.game === account.game && item.riotId.trim().toLocaleLowerCase("tr-TR") === normalized,
   );
-  if (existing >= 0) accounts[existing] = account;
-  else accounts.unshift(account);
-  writeGuestAccounts(accounts);
+  const idCollision = existing < 0 && accounts.some((item) => item.id === account.id);
+  const saved = {
+    ...account,
+    id: existing >= 0
+      ? accounts[existing].id
+      : idCollision
+        ? crypto.randomUUID()
+        : account.id,
+  };
+  const remaining = accounts.filter((_, index) => index !== existing);
+  writeGuestAccounts([saved, ...remaining]);
+  return saved;
 }
 
 export function removeGuestAccounts(ids: string[]) {

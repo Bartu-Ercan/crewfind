@@ -23,7 +23,7 @@ describe("guest Riot accounts", () => {
     upsertGuestAccount({ id: "one", riotId: "Bartu#TR1", game: "valorant", preference, updatedAt: "a" });
     upsertGuestAccount({ id: "two", riotId: "bartu#tr1", game: "valorant", preference, updatedAt: "b" });
     expect(readGuestAccounts()).toEqual([
-      expect.objectContaining({ id: "two", riotId: "bartu#tr1", updatedAt: "b" }),
+      expect.objectContaining({ id: "one", riotId: "bartu#tr1", updatedAt: "b" }),
     ]);
   });
 
@@ -34,11 +34,12 @@ describe("guest Riot accounts", () => {
     expect(readGuestAccounts().map((item) => item.id)).toEqual(["two"]);
   });
 
-  it("updates a selected profile when its Riot ID changes", () => {
+  it("does not rename another profile when a stale id is reused", () => {
     upsertGuestAccount({ id: "saved", riotId: "First#TR1", game: "valorant", preference, updatedAt: "a" });
     upsertGuestAccount({ id: "saved", riotId: "Renamed#TR1", game: "valorant", preference, updatedAt: "b" });
-    expect(readGuestAccounts()).toEqual([
-      expect.objectContaining({ id: "saved", riotId: "Renamed#TR1", updatedAt: "b" }),
-    ]);
+    expect(readGuestAccounts()).toHaveLength(2);
+    expect(readGuestAccounts()[0]).toEqual(expect.objectContaining({ riotId: "Renamed#TR1", updatedAt: "b" }));
+    expect(readGuestAccounts()[0].id).not.toBe("saved");
+    expect(readGuestAccounts()[1]).toEqual(expect.objectContaining({ id: "saved", riotId: "First#TR1", updatedAt: "a" }));
   });
 });
