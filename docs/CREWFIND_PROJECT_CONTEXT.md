@@ -286,8 +286,9 @@ Kademe renkleri:
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
-12. Devam ediyor: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulanıyor; Google OAuth ve özel SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
-13. Sonraki: Hesap sağlayıcıları tamamlandıktan sonra kontrollü yük testi.
+12. Tamamlandı: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulandı; Google OAuth ve özel SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
+13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
+14. Sonraki: Beta yayın kalite turu; mobil ve masaüstü tarayıcı matrisi, dış e-posta teslimatı, Google hesap yükseltme ve erişilebilirlik kabul testleri.
 
 ## Riot Developer Portal
 

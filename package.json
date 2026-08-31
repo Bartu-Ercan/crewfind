@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "test": "vitest run",
+    "test:load": "vitest run backend/matchmaking/load.test.ts",
     "test:watch": "vitest"
   },
   "dependencies": {

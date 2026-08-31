@@ -55,5 +55,11 @@ Gizlilik ile Kullanım Koşulları sayfaları gerçek metinlerle yayınlanmalıd
 ```bash
 npm run dev
 npm run test
+npm run test:load
 npm run build
 ```
+
+`npm run test:load`, 250 karışık Valorant, LoL ve CS2 adayını oyun bağlamlarını
+karıştırmadan 50 takıma ayıran uygulama benchmarkını çalıştırır. Gerçek Postgres testi
+`supabase/tests/controlled_load.sql` dosyasındadır; bütün test verisini tek transaction
+içinde oluşturur ve sonuçtan sonra `rollback` ile temizler.
