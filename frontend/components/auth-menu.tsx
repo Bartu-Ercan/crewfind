@@ -35,7 +35,7 @@ const FOCUSABLE = [
   "input:not([disabled])",
   "select:not([disabled])",
   "textarea:not([disabled])",
-  "iframe",
+  "iframe:not([tabindex='-1'])",
   "[tabindex]:not([tabindex='-1'])",
 ].join(",");
 
@@ -188,7 +188,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     resetFeedback();
     if (captchaRequired && !captchaToken) {
       setEmailFlowStarted(true);
-      setError("Güvenlik doğrulamasını tamamla.");
+      setError("Güvenlik kontrolü hazırlanıyor. Bir saniye sonra tekrar dene.");
       return;
     }
     if (passwordVisible && (password.length < 8 || password.length > 72)) {
@@ -224,7 +224,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
           localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
           setError(readableError(resetError));
         }
-        else setMessage("Parola yenileme bağlantısı gönderildi.");
+        else setMessage("Adres kayıtlıysa parola yenileme bağlantısı gönderildi.");
         return;
       }
       if (mode === "login") {
@@ -275,7 +275,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
         localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
         setError(readableError(registerError));
-      } else setMessage("Doğrulama bağlantısı gönderildi.");
+      } else setMessage("Yeni hesapsa doğrulama bağlantısı gönderildi. Gelmediyse adres zaten kayıtlı olabilir.");
     } finally {
       setBusy(false);
       if (captchaRequired) resetCaptcha();
@@ -361,11 +361,12 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
               {mode !== "set-password" ? <label><span>E-posta</span><div><Mail size={15} /><input type="email" required autoComplete="email" value={email} onFocus={() => setEmailFlowStarted(true)} onChange={(event) => setEmail(event.target.value)} placeholder="mail@ornek.com" /></div></label> : null}
               {passwordVisible ? <label><span>{mode === "set-password" ? "Yeni parola" : "Parola"}</span><div><KeyRound size={15} /><input type="password" required minLength={8} maxLength={72} autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onFocus={() => setEmailFlowStarted(true)} onChange={(event) => setPassword(event.target.value)} placeholder="En az 8 karakter" /></div></label> : null}
               {mode === "register" || (mode === "login" && socialEnabled) ? <label className="terms-check"><input type="checkbox" checked={accepted} onChange={(event) => setAccepted(event.target.checked)} /><span><Link href="/kullanim-kosullari">Kullanım Koşulları</Link> ve <Link href="/gizlilik">Gizlilik Politikası</Link>nı kabul ediyorum.</span></label> : null}
-              {captchaVisible && turnstileSiteKey ? <Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik doğrulaması yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ appearance: "interaction-only", theme, size: "flexible" }} /> : null}
+              {captchaVisible && turnstileSiteKey ? <Turnstile className="turnstile-sentinel" ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik kontrolü yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ action: "email_auth", size: "invisible", tabIndex: -1, responseField: false, theme }} /> : null}
               <div aria-live="polite">
                 {error ? <p className="auth-feedback error"><X size={14} />{error}</p> : null}
                 {message ? <p className="auth-feedback success"><Check size={14} />{message}</p> : null}
               </div>
+              {message && mode === "register" ? <button type="button" className="auth-recovery-link" onClick={() => switchMode("reset")}>E-posta gelmediyse parola bağlantısı iste</button> : null}
               <button className="auth-submit" disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <ShieldCheck size={16} />}{mode === "register" ? "Hesap oluştur" : mode === "reset" ? "Bağlantı gönder" : mode === "set-password" ? "Parolayı kaydet" : "Giriş yap"}</button>
             </form>
             {mode !== "set-password" ? <div className="auth-switch">

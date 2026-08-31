@@ -133,9 +133,9 @@ Kademe renkleri:
 ## Turnstile Davranışı
 
 - Turnstile yalnızca yeni anonim oturum gerektiğinde yüklenir; mevcut oturumu olan kullanıcıya gösterilmez.
-- Widget `interaction-only` görünümünü kullanır ve yalnızca Cloudflare etkileşim istediğinde görünür.
+- Cloudflare widget `Invisible` modundadır; kontrol arka planda çalışır ve kutu, spinner veya `Verify human` metni göstermez.
 - Yeni oturum gerektiğinde doğrulama tokenı oluşmadan arama butonu aktif olmaz.
-- Hesap modalında Turnstile yalnız e-posta kayıt, parola girişi veya parola sıfırlama alanıyla etkileşim kurulunca yüklenir; Google OAuth akışında gösterilmez ve kullanılmaz.
+- Hesap modalında görünmez Turnstile yalnız e-posta kayıt, parola girişi veya parola sıfırlama alanıyla etkileşim kurulunca yüklenir; Google OAuth akışında kullanılmaz.
 
 ## Lobi Davranışı
 

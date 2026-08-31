@@ -10,10 +10,11 @@ const mocks = vi.hoisted(() => ({
   signInWithOAuth: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   linkIdentity: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   updateUser: vi.fn(async () => ({ data: { user: null }, error: null as null | { code: string; message: string } })),
+  signUp: vi.fn(async () => ({ data: { user: null, session: null }, error: null })),
 }));
 
 vi.mock("@marsidev/react-turnstile", () => ({
-  Turnstile: () => <div data-testid="turnstile" />,
+  Turnstile: ({ className, options }: { className?: string; options?: { action?: string; size?: string; tabIndex?: number; responseField?: boolean } }) => <div className={className} data-testid="turnstile" data-action={options?.action} data-size={options?.size} data-tab-index={options?.tabIndex} data-response-field={String(options?.responseField)} />,
 }));
 
 vi.mock("@/backend/supabase/browser-client", () => ({
@@ -22,6 +23,7 @@ vi.mock("@/backend/supabase/browser-client", () => ({
       linkIdentity: mocks.linkIdentity,
       signInWithOAuth: mocks.signInWithOAuth,
       signOut: vi.fn(async () => ({ error: null })),
+      signUp: mocks.signUp,
       updateUser: mocks.updateUser,
     },
   }),
@@ -64,6 +66,7 @@ describe("AuthMenu", () => {
     mocks.signInWithOAuth.mockClear();
     mocks.linkIdentity.mockClear();
     mocks.updateUser.mockClear();
+    mocks.signUp.mockClear();
     mocks.user = null;
     container = document.createElement("div");
     document.body.append(container);
@@ -112,13 +115,18 @@ describe("AuthMenu", () => {
     expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
   });
 
-  it("mounts Turnstile only after email interaction", async () => {
+  it("mounts only an invisible background Turnstile after email interaction", async () => {
     await openMenu();
     const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
 
     await act(async () => email.focus());
 
-    expect(container.querySelector("[data-testid='turnstile']")).not.toBeNull();
+    const turnstile = container.querySelector<HTMLElement>("[data-testid='turnstile']");
+    expect(turnstile?.classList.contains("turnstile-sentinel")).toBe(true);
+    expect(turnstile?.dataset.size).toBe("invisible");
+    expect(turnstile?.dataset.action).toBe("email_auth");
+    expect(turnstile?.dataset.tabIndex).toBe("-1");
+    expect(turnstile?.dataset.responseField).toBe("false");
   });
 
   it("moves an existing email upgrade to the login flow with a clear message", async () => {
@@ -144,5 +152,29 @@ describe("AuthMenu", () => {
     expect(container.textContent).toContain("Bu e-posta zaten kayıtlı. Giriş yap veya parolanı yenile.");
     expect(container.querySelector<HTMLButtonElement>(".auth-mode-switch button[aria-pressed='true']")?.textContent).toBe("Giriş yap");
     expect(container.querySelector("input[type='password']")).not.toBeNull();
+  });
+
+  it("does not promise an email for an obfuscated repeated signup response", async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = "false";
+    await openMenu();
+    const register = [...container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "Hesap oluştur")!;
+    await act(async () => register.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    const fields = container.querySelectorAll<HTMLInputElement>(".auth-form input");
+    const setValue = (input: HTMLInputElement, value: string) => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    await act(async () => {
+      setValue(fields[0], "registered@example.com");
+      setValue(fields[1], "password123");
+      fields[2].click();
+    });
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+
+    expect(mocks.signUp).toHaveBeenCalledOnce();
+    expect(container.textContent).toContain("Yeni hesapsa doğrulama bağlantısı gönderildi. Gelmediyse adres zaten kayıtlı olabilir.");
+    expect(container.textContent).toContain("E-posta gelmediyse parola bağlantısı iste");
   });
 });

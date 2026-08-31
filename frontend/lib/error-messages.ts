@@ -98,6 +98,7 @@ export function readableError(caught: unknown) {
     "Geçersiz mesaj",
     "Bu lobinin üyesi değilsin",
     "Güvenlik doğrulamasını tamamla.",
+    "Güvenlik kontrolü hazırlanıyor. Bir saniye sonra tekrar dene.",
     "Supabase çevre değişkenleri eksik.",
   ];
 

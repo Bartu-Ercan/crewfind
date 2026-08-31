@@ -406,7 +406,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
     if (sessionData.session) return sessionData.session.access_token;
 
     setNeedsCaptcha(true);
-    if (turnstileEnabled && !captchaToken) throw new Error("Güvenlik doğrulamasını tamamla.");
+    if (turnstileEnabled && !captchaToken) throw new Error("Güvenlik kontrolü hazırlanıyor. Bir saniye sonra tekrar dene.");
     const { data, error: authError } = await client.auth.signInAnonymously(
       turnstileEnabled ? { options: { captchaToken } } : undefined,
     );
@@ -679,7 +679,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             {game === "league-of-legends" && selectedQueue === "solo-duo" ? null : <div className="field"><span>Kaç kişi arıyorsunuz?</span><div className="party-picker search-count-picker">{[1, 2, 3, 4].map((requested) => { const unavailable = requested > 5 - form.partySize; return <button type="button" key={requested} className={form.targetSize - form.partySize === requested ? "selected" : ""} disabled={unavailable} onClick={() => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))}>{form.targetSize - form.partySize === requested ? `${requested} kişi` : requested}</button>; })}</div></div>}
 
             {game === "cs2" && selectedQueue === "competitive" ? <p className="filter-summary">{selectionLabel(CS2_MAPS, form.maps, "Harita seçilmedi")}</p> : null}
-            {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <div className="turnstile-wrap"><Turnstile ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik doğrulaması yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ appearance: "interaction-only", theme, size: "flexible" }} /></div> : null}
+            {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <Turnstile className="turnstile-sentinel" ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik kontrolü yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ action: "anonymous_session", size: "invisible", tabIndex: -1, responseField: false, theme }} /> : null}
             {error ? <div className="error-message"><X size={15} /> {error}</div> : null}
             <button className="primary-button" disabled={busy || !authReady || (!demoMode && !runtimeConfigured) || (needsCaptcha && !captchaToken)}>{busy ? <LoaderCircle className="spin" size={19} /> : <Search size={19} />}{busy ? "Aranıyor..." : "Oyuncu ara"}</button>
           </form>

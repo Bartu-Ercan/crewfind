@@ -620,9 +620,14 @@ h3,
   border-color: color-mix(in srgb, var(--accent) 56%, var(--border));
 }
 
+.riot-input:focus-within {
+  outline-offset: -2px;
+}
+
 .riot-input.has-error {
   border-color: var(--error);
   outline: 2px solid color-mix(in srgb, var(--error) 20%, transparent);
+  outline-offset: -2px;
 }
 
 .riot-input.is-valid:not(.has-error) {
@@ -932,9 +937,12 @@ h3,
   text-align: left;
 }
 
-.turnstile-wrap {
-  display: flex;
-  justify-content: center;
+.turnstile-sentinel {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  pointer-events: none;
 }
 
 .primary-button {
@@ -1802,6 +1810,7 @@ h3,
 .auth-feedback { margin: 0; padding: 9px 11px; display: flex; align-items: flex-start; gap: 7px; border-radius: 12px; font-size: 11px; line-height: 1.4; }
 .auth-feedback.error { color: var(--error); background: color-mix(in srgb, var(--error) 9%, transparent); }
 .auth-feedback.success { color: var(--success); background: color-mix(in srgb, var(--success) 9%, transparent); }
+.auth-recovery-link { align-self: center; padding: 0; border: 0; background: transparent; color: var(--accent); font-size: 10px; font-weight: 600; }
 .auth-switch { min-height: 20px; margin-top: 10px; display: flex; justify-content: center; }
 .auth-switch button { padding: 0; border: 0; background: transparent; font-size: 10px; font-weight: 600; }
 .auth-legal { margin: 14px 0 0; color: var(--text-muted); font-size: 9px; text-align: center; }
