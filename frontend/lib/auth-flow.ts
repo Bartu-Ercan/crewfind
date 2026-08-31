@@ -1,4 +1,5 @@
 export const AUTH_TERMS_STORAGE_KEY = "crewfind-auth-terms";
+export const AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY = "crewfind-auth-oauth-terms-pending";
 export const AUTH_MODAL_MODE_STORAGE_KEY = "crewfind-auth-open-mode";
 export const AUTH_NEEDS_PASSWORD_STORAGE_KEY = "crewfind-needs-password";
 export const AUTH_PENDING_INTENT_STORAGE_KEY = "crewfind-auth-pending-intent";
@@ -52,4 +53,16 @@ export function buildAuthCallbackUrl(origin: string, intent: AuthCallbackIntent,
 
 export function callbackNeedsPassword(intent: AuthCallbackIntent) {
   return intent === "email-link" || intent === "password-recovery";
+}
+
+export function consumePendingOAuthTerms(
+  storage: Pick<Storage, "getItem" | "setItem" | "removeItem">,
+  intent: AuthCallbackIntent,
+  termsVersion: string,
+) {
+  if (intent !== "oauth-login" && intent !== "oauth-link") return false;
+  if (storage.getItem(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY) !== termsVersion) return false;
+  storage.setItem(AUTH_TERMS_STORAGE_KEY, termsVersion);
+  storage.removeItem(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY);
+  return true;
 }

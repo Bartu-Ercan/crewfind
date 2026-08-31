@@ -2,6 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY } from "@/frontend/lib/auth-flow";
 import { AuthMenu } from "./auth-menu";
 
 const mocks = vi.hoisted(() => ({
@@ -101,18 +102,41 @@ describe("AuthMenu", () => {
 
   it("starts Google OAuth without a CAPTCHA token", async () => {
     await openMenu();
-    const terms = container.querySelector<HTMLInputElement>(".terms-check input")!;
     const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
     const google = [...container.querySelectorAll<HTMLButtonElement>("button")]
       .find((button) => button.textContent?.includes("Google ile devam et"))!;
 
     await act(async () => email.focus());
     expect(container.querySelector("[data-testid='turnstile']")).not.toBeNull();
-    await act(async () => terms.dispatchEvent(new MouseEvent("click", { bubbles: true })));
     await act(async () => google.dispatchEvent(new MouseEvent("click", { bubbles: true })));
 
     expect(mocks.signInWithOAuth).toHaveBeenCalledWith(expect.objectContaining({ provider: "google" }));
+    expect(localStorage.getItem(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY)).toBe("2026-08-29");
     expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
+    expect(container.querySelector(".terms-check")).toBeNull();
+    expect(container.querySelector(".auth-social-consent")?.textContent).toContain("Google ile devam ederek");
+  });
+
+  it("keeps explicit terms consent for email registration", async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = "false";
+    await openMenu();
+    const register = [...container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "Hesap oluştur")!;
+    await act(async () => register.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    const fields = container.querySelectorAll<HTMLInputElement>(".auth-form input");
+    const setValue = (input: HTMLInputElement, value: string) => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+    await act(async () => {
+      setValue(fields[0], "new@example.com");
+      setValue(fields[1], "password123");
+    });
+
+    expect(container.querySelector(".terms-check input")).not.toBeNull();
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    expect(container.textContent).toContain("Gizlilik ve kullanım koşullarını kabul et.");
+    expect(mocks.signUp).not.toHaveBeenCalled();
   });
 
   it("mounts only an invisible background Turnstile after email interaction", async () => {

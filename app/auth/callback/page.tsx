@@ -7,10 +7,12 @@ import {
   AUTH_MODAL_MODE_STORAGE_KEY,
   AUTH_NEEDS_PASSWORD_STORAGE_KEY,
   AUTH_PENDING_INTENT_STORAGE_KEY,
+  consumePendingOAuthTerms,
   callbackNeedsPassword,
   parseAuthCallbackIntent,
   sanitizeAuthNext,
 } from "@/frontend/lib/auth-flow";
+import { TERMS_VERSION } from "@/frontend/types/account";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
@@ -41,6 +43,7 @@ export default function AuthCallbackPage() {
         sessionStorage.setItem(AUTH_MODAL_MODE_STORAGE_KEY, "set-password");
         localStorage.setItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY, "true");
       }
+      consumePendingOAuthTerms(localStorage, intent, TERMS_VERSION);
       localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
       window.location.replace(next);
     };

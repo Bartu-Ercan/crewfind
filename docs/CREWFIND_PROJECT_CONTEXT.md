@@ -263,7 +263,8 @@ Kademe renkleri:
 - Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Discord ve Riot girişleri hazır olana kadar gizlidir.
 - Parola sınırı 8-72 karakterdir. Sözleşme kabulü kullanıcı tarafından açıkça verilmeden kaydedilmez.
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
-- Gizlilik ve kullanım koşulları sürümlüdür; hesap oluştururken kabul zamanı kalıcı profilde saklanır.
+- Gizlilik ve kullanım koşulları sürümlüdür. E-posta ile hesap oluştururken açık onay kutusu zorunludur. Google butonunun altındaki kısa bilgilendirme, Google akışını başlatan tıklamanın kabul anlamına geldiğini açıklar; kabul yalnız başarılı OAuth dönüşünden sonra kalıcı profilde saklanır.
+- Beta e-postaları custom Gmail SMTP üzerinden gönderilir ve gönderen kişisel Gmail adresidir. CrewFind adına ait doğrulanmış özel alan adı alınmadan gönderen adresi değiştirilmeyecek; genel lansmandan önce alan adı tabanlı transactional e-posta sağlayıcısına geçilecektir.
 
 ## Negatif Kısıtlar
 
@@ -286,9 +287,9 @@ Kademe renkleri:
 9. Tamamlandı: Route bazlı title/meta, OpenGraph, JSON-LD, sitemap ve robots.
 10. Tamamlandı: Güvenlik sertleştirmesi; rate limiting, ayrıcalıklı fonksiyon izolasyonu, güvenli hata yönetimi, Riot/Steam kimlik doğrulama stratejisi ve env denetimi.
 11. Tamamlandı: LoL için hata toleranslı, isteğe bağlı LeagueOfGraphs profil özeti.
-12. Tamamlandı: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulandı; Google OAuth ve özel SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
+12. Tamamlandı: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulandı; Google OAuth ve beta Gmail SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
 13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
-14. Sonraki: Beta yayın kalite turu; mobil ve masaüstü tarayıcı matrisi, dış e-posta teslimatı, Google hesap yükseltme ve erişilebilirlik kabul testleri.
+14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
 
 ## Riot Developer Portal
 
