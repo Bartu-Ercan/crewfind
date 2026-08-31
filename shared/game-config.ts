@@ -291,6 +291,13 @@ export function rankNameFor(game: GameId, queueType: string, value: number) {
   return ranksFor(game, queueType)[value]?.name ?? "Bilinmiyor";
 }
 
+export function rankColorFor(game: GameId, queueType: string, value: number) {
+  if (game === "cs2" && queueType === "premier") {
+    return CS2_RATING_BANDS.find((band) => band.value === value)?.color ?? "#8a9690";
+  }
+  return ranksFor(game, queueType)[value]?.color ?? "#8a9690";
+}
+
 export function optionLabel(options: FilterOption[], value: string) {
   return options.find((option) => option.value === value)?.label ?? value;
 }

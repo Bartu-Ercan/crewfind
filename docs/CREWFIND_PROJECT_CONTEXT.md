@@ -129,6 +129,7 @@ Kademe renkleri:
 - Dairesel ikon rozeti, durum etiketi ve süre/aranan/bölge istatistikleri düz dizilir.
 - Sunucu istatistiğinde kuyruk türü tekrarlanmaz; yalnızca seçilen sunucu veya sunucu özeti gösterilir.
 - Dairesel ikon rozetinin çevresinde ince, gölgesiz ve sürekli dönen bir arama halkası bulunur.
+- Windows ve Chromium tarafında sistem hareket azaltma tercihi açık olsa da aramayı anlatan halka yavaş biçimde dönmeye devam eder; yalnız dekoratif iç nefes animasyonu kapanır.
 
 ## Turnstile Davranışı
 
@@ -265,6 +266,7 @@ Kademe renkleri:
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
 - Gizlilik ve kullanım koşulları sürümlüdür. E-posta ile hesap oluştururken açık onay kutusu zorunludur. Google butonunun altındaki kısa bilgilendirme, Google akışını başlatan tıklamanın kabul anlamına geldiğini açıklar; kabul yalnız başarılı OAuth dönüşünden sonra kalıcı profilde saklanır.
 - Beta e-postaları custom Gmail SMTP üzerinden gönderilir ve gönderen kişisel Gmail adresidir. CrewFind adına ait doğrulanmış özel alan adı alınmadan gönderen adresi değiştirilmeyecek; genel lansmandan önce alan adı tabanlı transactional e-posta sağlayıcısına geçilecektir.
+- Doğrulama e-postası CrewFind mint/grafit dilinde, büyük tek eylem düğmesi ve düz bağlantı yedeği kullanır. Auth callback yalnız bir kez işlenir; PKCE kodu tüketilmeden başarılı sayılmaz.
 
 ## Negatif Kısıtlar
 

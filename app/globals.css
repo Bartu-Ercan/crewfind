@@ -1030,6 +1030,9 @@ h3,
   border: 1px solid color-mix(in srgb, var(--border) 74%, transparent);
   border-top-color: var(--accent);
   border-radius: 999px;
+  transform: rotate(0deg);
+  transform-origin: center;
+  will-change: transform;
   animation: matchmaking-orbit 1.8s linear infinite;
 }
 
@@ -1038,6 +1041,10 @@ h3,
 }
 
 @keyframes matchmaking-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+
   to {
     transform: rotate(360deg);
   }
@@ -1051,11 +1058,14 @@ h3,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .matchmaking-badge::after,
   .matchmaking-badge svg,
   .account-popover,
   .account-popover.auth-modal {
     animation: none;
+  }
+
+  .matchmaking-badge::after {
+    animation-duration: 3.6s;
   }
 }
 
@@ -1381,9 +1391,23 @@ h3,
   margin-bottom: 4px;
 }
 
-.player-card > span {
+.player-card > span,
+.player-rank {
   color: var(--text-secondary);
   font-size: 14px;
+}
+
+.player-rank {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+}
+
+.player-rank .rank-badge {
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
 }
 
 .card-meta {

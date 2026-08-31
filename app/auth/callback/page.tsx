@@ -1,7 +1,7 @@
 "use client";
 
 import { LoaderCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/backend/supabase/browser-client";
 import {
   AUTH_MODAL_MODE_STORAGE_KEY,
@@ -16,13 +16,20 @@ import { TERMS_VERSION } from "@/frontend/types/account";
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
+  const started = useRef(false);
 
   useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     const complete = async () => {
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
       const intent = parseAuthCallbackIntent(url.searchParams.get("intent"));
       const next = sanitizeAuthNext(url.searchParams.get("next"));
+      if (url.searchParams.has("error") || url.searchParams.has("error_code")) {
+        setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
+        return;
+      }
       if (!intent) {
         setError("Giriş isteği geçersiz.");
         return;
@@ -35,7 +42,7 @@ export default function AuthCallbackPage() {
       const client = getSupabaseBrowserClient();
       const { data: { session }, error: sessionError } = await client.auth.getSession();
       const codeWasConsumed = !new URL(window.location.href).searchParams.has("code");
-      if (sessionError || !session || session.user.is_anonymous || !codeWasConsumed) {
+      if (sessionError || !session || session.user.is_anonymous || (code && !codeWasConsumed)) {
         setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
         return;
       }

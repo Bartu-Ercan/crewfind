@@ -1,8 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { CS2_MAPS, rankSystemFor } from "./game-config";
+import { CS2_MAPS, rankColorFor, rankSystemFor } from "./game-config";
 import { createInitialSearchInput, searchSchema } from "./validation";
 
 describe("oyun arama doğrulaması", () => {
+  it("lobi rank rozeti için seçili kademenin rengini kullanır", () => {
+    expect(rankColorFor("valorant", "competitive", 16)).toBe("#9451d6");
+    expect(rankColorFor("league-of-legends", "solo-duo", 24)).toBe("#6e87d8");
+    expect(rankColorFor("cs2", "premier", 9_500)).toBe("#657bd9");
+  });
+
   it("Valorant varsayılanlarını geriye uyumlu tutar", () => {
     const input = { ...createInitialSearchInput("valorant"), displayName: "Oyuncu#TR1", contactValue: "Oyuncu#TR1" };
     expect(searchSchema.safeParse(input).success).toBe(true);
