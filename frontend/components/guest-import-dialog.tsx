@@ -8,7 +8,7 @@ import { readGuestAccounts, removeGuestAccounts } from "@/frontend/lib/guest-acc
 import type { GuestRiotAccount } from "@/frontend/types/account";
 
 export function GuestImportDialog() {
-  const { isPermanent, overview, refresh } = useAccount();
+  const { user, isPermanent, overview, refresh } = useAccount();
   const [accounts, setAccounts] = useState<GuestRiotAccount[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
   const [busy, setBusy] = useState(false);
@@ -16,13 +16,13 @@ export function GuestImportDialog() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isPermanent || !overview || closed) return;
+    if (!isPermanent || !overview || closed || user?.user_metadata?.needs_password === true) return;
     const local = readGuestAccounts();
     setAccounts(local);
     setSelected(local.map((account) => account.id));
-  }, [closed, isPermanent, overview]);
+  }, [closed, isPermanent, overview, user]);
 
-  if (!isPermanent || !overview || !accounts.length || closed) return null;
+  if (!isPermanent || !overview || !accounts.length || closed || user?.user_metadata?.needs_password === true) return null;
 
   async function importSelected() {
     setBusy(true);
