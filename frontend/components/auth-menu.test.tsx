@@ -6,7 +6,7 @@ import { AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY } from "@/frontend/lib/auth-flow";
 import { AuthMenu } from "./auth-menu";
 
 const mocks = vi.hoisted(() => ({
-  user: null as { is_anonymous: boolean } | null,
+  user: null as { is_anonymous: boolean; user_metadata?: Record<string, unknown> } | null,
   refresh: vi.fn(async () => undefined),
   signInWithOAuth: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   linkIdentity: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
@@ -100,6 +100,15 @@ describe("AuthMenu", () => {
     expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
   });
 
+  it("opens password setup from persistent user metadata", async () => {
+    mocks.user = { is_anonymous: false, user_metadata: { needs_password: true } };
+
+    await act(async () => root.render(<AuthMenu disabled={false} theme="light" />));
+
+    expect(container.textContent).toContain("Parolanı oluştur");
+    expect(container.querySelector<HTMLInputElement>("input[type='password']")).not.toBeNull();
+  });
+
   it("starts Google OAuth without a CAPTCHA token", async () => {
     await openMenu();
     const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
@@ -176,6 +185,29 @@ describe("AuthMenu", () => {
     expect(container.textContent).toContain("Bu e-posta zaten kayıtlı. Giriş yap veya parolanı yenile.");
     expect(container.querySelector<HTMLButtonElement>(".auth-mode-switch button[aria-pressed='true']")?.textContent).toBe("Giriş yap");
     expect(container.querySelector("input[type='password']")).not.toBeNull();
+  });
+
+  it("marks an anonymous email upgrade as requiring a password", async () => {
+    process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = "false";
+    mocks.user = { is_anonymous: true };
+    await openMenu();
+    const register = [...container.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "Hesap oluştur")!;
+    await act(async () => register.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+    const email = container.querySelector<HTMLInputElement>("input[type='email']")!;
+    const terms = container.querySelector<HTMLInputElement>(".terms-check input")!;
+
+    await act(async () => {
+      email.value = "new@example.com";
+      email.dispatchEvent(new Event("input", { bubbles: true }));
+      terms.click();
+    });
+    await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+
+    expect(mocks.updateUser).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ needs_password: true }) }),
+      expect.any(Object),
+    );
   });
 
   it("does not promise an email for an obfuscated repeated signup response", async () => {

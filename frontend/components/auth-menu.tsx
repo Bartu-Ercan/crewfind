@@ -72,12 +72,13 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
 
   useEffect(() => {
     const shouldSetPassword = sessionStorage.getItem(AUTH_MODAL_MODE_STORAGE_KEY) === "set-password"
-      || localStorage.getItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY) === "true";
+      || localStorage.getItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY) === "true"
+      || user?.user_metadata?.needs_password === true;
     if (!shouldSetPassword) return;
     sessionStorage.removeItem(AUTH_MODAL_MODE_STORAGE_KEY);
     setMode("set-password");
     setOpen(true);
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!signedPopoverOpen) return;
@@ -201,7 +202,10 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
     const client = getSupabaseBrowserClient();
     try {
       if (mode === "set-password") {
-        const { error: passwordError } = await client.auth.updateUser({ password });
+        const { error: passwordError } = await client.auth.updateUser({
+          password,
+          data: { needs_password: false },
+        });
         if (passwordError) setError(readableError(passwordError));
         else {
           localStorage.removeItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY);
@@ -241,7 +245,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
       localStorage.setItem(AUTH_TERMS_STORAGE_KEY, TERMS_VERSION);
       if (user?.is_anonymous) {
         const { error: emailError } = await client.auth.updateUser(
-          { email: email.trim(), data: { terms_version: TERMS_VERSION } },
+          { email: email.trim(), data: { terms_version: TERMS_VERSION, needs_password: true } },
           { emailRedirectTo: callbackUrl("email-link") },
         );
         if (emailError) {
@@ -265,7 +269,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         options: {
           emailRedirectTo: callbackUrl("email-confirm"),
           captchaToken: captchaToken || undefined,
-          data: { terms_version: TERMS_VERSION },
+          data: { terms_version: TERMS_VERSION, needs_password: false },
         },
       });
       if (registerError) {

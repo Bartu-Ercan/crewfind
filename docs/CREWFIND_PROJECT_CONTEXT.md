@@ -266,7 +266,7 @@ Kademe renkleri:
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
 - Gizlilik ve kullanım koşulları sürümlüdür. E-posta ile hesap oluştururken açık onay kutusu zorunludur. Google butonunun altındaki kısa bilgilendirme, Google akışını başlatan tıklamanın kabul anlamına geldiğini açıklar; kabul yalnız başarılı OAuth dönüşünden sonra kalıcı profilde saklanır.
 - Beta e-postaları custom Gmail SMTP üzerinden gönderilir ve gönderen kişisel Gmail adresidir. CrewFind adına ait doğrulanmış özel alan adı alınmadan gönderen adresi değiştirilmeyecek; genel lansmandan önce alan adı tabanlı transactional e-posta sağlayıcısına geçilecektir.
-- Doğrulama e-postası CrewFind mint/grafit dilinde, büyük tek eylem düğmesi ve düz bağlantı yedeği kullanır. Auth callback yalnız bir kez işlenir; PKCE kodu tüketilmeden başarılı sayılmaz.
+- Doğrulama e-postası CrewFind mint/grafit dilinde, büyük tek eylem düğmesi ve düz bağlantı yedeği kullanır. Auth callback yalnız bir kez işlenir; PKCE kodu tüketilmeden başarılı sayılmaz. Anonim e-posta yükseltmesinde `needs_password` kullanıcı metadata işareti parola oluşturulana kadar korunur; modal yalnız tarayıcı deposuna bağlı kalmadan yeniden açılır.
 
 ## Negatif Kısıtlar
 
