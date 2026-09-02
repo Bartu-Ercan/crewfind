@@ -267,6 +267,8 @@ Kademe renkleri:
 - Gizlilik ve kullanım koşulları sürümlüdür. E-posta ile hesap oluştururken açık onay kutusu zorunludur. Google butonunun altındaki kısa bilgilendirme, Google akışını başlatan tıklamanın kabul anlamına geldiğini açıklar; kabul yalnız başarılı OAuth dönüşünden sonra kalıcı profilde saklanır.
 - Beta e-postaları custom Gmail SMTP üzerinden gönderilir ve gönderen kişisel Gmail adresidir. CrewFind adına ait doğrulanmış özel alan adı alınmadan gönderen adresi değiştirilmeyecek; genel lansmandan önce alan adı tabanlı transactional e-posta sağlayıcısına geçilecektir.
 - Doğrulama e-postası CrewFind mint/grafit dilinde, büyük tek eylem düğmesi ve düz bağlantı yedeği kullanır. Auth callback yalnız bir kez işlenir; Supabase istemcisinin otomatik URL tüketimi kapalıdır ve PKCE kodu callback içinde açıkça `exchangeCodeForSession` ile tüketilmeden işlem başarılı sayılmaz. Anonim e-posta yükseltmesinde `needs_password` kullanıcı metadata işareti parola oluşturulana kadar korunur; modal yalnız tarayıcı deposuna bağlı kalmadan yeniden açılır. Misafir profil aktarımı parola oluşturma tamamlanana kadar gösterilmez.
+- CrewFind yayın öncesi beta olarak etiketlenir. Logo mikro animasyonunun ölçüsünü değiştirmeyen küçük `BETA` rozeti bütün ürün ve yasal sayfalarda görünür.
+- Oyun sayfalarının en altında küçük `Fikir ve öneri` kontrolü bulunur. Ortalanmış, gölgesiz modal öneri, hata ve diğer geri bildirim türlerini; mesajı ve isteğe bağlı yanıt e-postasını alır. Mesaj önce Data API'ye kapalı özel tabloda saklanır, ardından yalnız sunucu tarafındaki SMTP yapılandırmasıyla e-posta bildirimi gönderilir. E-posta teslimatı başarısız olsa bile geri bildirim kaybolmaz.
 
 ## Negatif Kısıtlar
 
@@ -292,6 +294,7 @@ Kademe renkleri:
 12. Tamamlandı: Ortalanmış giriş modalı, otomatik Riot profil kaydı ve küçük yukarı açılan hesap seçici uygulandı; Google OAuth ve beta Gmail SMTP canlıdır, Discord ve Riot girişleri ertelenmiştir.
 13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
 14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
+15. Tamamlandı: Küçük beta rozeti ve rate-limit korumalı, özel inbox'a dayanıklı geri bildirim akışı eklendi. SMTP bildirimi yalnız sunucu secret'ları üzerinden çalışır.
 
 ## Riot Developer Portal
 
