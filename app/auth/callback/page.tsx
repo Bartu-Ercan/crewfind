@@ -34,15 +34,13 @@ export default function AuthCallbackPage() {
         setError("Giriş isteği geçersiz.");
         return;
       }
-      const expectedIntent = localStorage.getItem(AUTH_PENDING_INTENT_STORAGE_KEY);
-      if (!code && expectedIntent !== intent) {
+      if (!code) {
         setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
         return;
       }
       const client = getSupabaseBrowserClient();
-      const { data: { session }, error: sessionError } = await client.auth.getSession();
-      const codeWasConsumed = !new URL(window.location.href).searchParams.has("code");
-      if (sessionError || !session || session.user.is_anonymous || (code && !codeWasConsumed)) {
+      const { data: { session }, error: sessionError } = await client.auth.exchangeCodeForSession(code);
+      if (sessionError || !session || session.user.is_anonymous) {
         setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
         return;
       }
