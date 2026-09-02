@@ -262,6 +262,7 @@ Kademe renkleri:
 - Başarılı arama sonrasında kullanılan Riot ID ve tam arama tercihi otomatik kaydedilir. Başarısız arama kayıt oluşturmaz; kayıt hatası başlamış aramayı iptal etmez. Ayrı `Kaydet` kontrolü kullanılmaz.
 - Misafir kayıtları versionlanmış localStorage verisidir; kalıcı hesaba geçişte yalnız kullanıcının seçtikleri buluta aktarılır.
 - Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Discord ve Riot girişleri hazır olana kadar gizlidir.
+- Kalıcı hesap profil menüsü gerçek mouse alanı terk edince oyun seçiciyle aynı 180 ms tolerans ve 140 ms sade fade sonrasında kapanır. Fare geri dönerse kapanma iptal edilir; dokunmatik ve klavye davranışı değişmez.
 - Parola sınırı 8-72 karakterdir. Sözleşme kabulü kullanıcı tarafından açıkça verilmeden kaydedilmez.
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
 - Gizlilik ve kullanım koşulları sürümlüdür. E-posta ile hesap oluştururken açık onay kutusu zorunludur. Google butonunun altındaki kısa bilgilendirme, Google akışını başlatan tıklamanın kabul anlamına geldiğini açıklar; kabul yalnız başarılı OAuth dönüşünden sonra kalıcı profilde saklanır.
@@ -295,6 +296,7 @@ Kademe renkleri:
 13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
 14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
 15. Tamamlandı: Küçük beta rozeti ve rate-limit korumalı, özel inbox'a dayanıklı geri bildirim akışı eklendi. SMTP bildirimi yalnız sunucu secret'ları üzerinden çalışır.
+16. Planlandı: Arama niyetli teknik ve içerik SEO paketi; ardından masaüstü geniş ekranlarda yalnız boş yan kolonlarda gösterilecek, ana formu ve mobil deneyimi etkilemeyecek reklam yerleşimi.
 
 ## Riot Developer Portal
 

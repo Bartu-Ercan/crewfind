@@ -1721,6 +1721,13 @@ h3,
 .signed-popover {
   width: 220px;
   padding: 8px;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.signed-popover.closing {
+  opacity: 0;
+  transform: translateY(-2px);
+  pointer-events: none;
 }
 
 .signed-popover > a,

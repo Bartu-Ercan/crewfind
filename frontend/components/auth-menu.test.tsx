@@ -7,6 +7,8 @@ import { AuthMenu } from "./auth-menu";
 
 const mocks = vi.hoisted(() => ({
   user: null as { is_anonymous: boolean; user_metadata?: Record<string, unknown> } | null,
+  overview: null as { username: string; email: string; avatarUrl: null } | null,
+  isPermanent: false,
   refresh: vi.fn(async () => undefined),
   signInWithOAuth: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   linkIdentity: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
@@ -33,8 +35,8 @@ vi.mock("@/backend/supabase/browser-client", () => ({
 vi.mock("@/frontend/components/account-provider", () => ({
   useAccount: () => ({
     user: mocks.user,
-    overview: null,
-    isPermanent: false,
+    overview: mocks.overview,
+    isPermanent: mocks.isPermanent,
     loading: false,
     refresh: mocks.refresh,
   }),
@@ -69,6 +71,8 @@ describe("AuthMenu", () => {
     mocks.updateUser.mockClear();
     mocks.signUp.mockClear();
     mocks.user = null;
+    mocks.overview = null;
+    mocks.isPermanent = false;
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -82,6 +86,7 @@ describe("AuthMenu", () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = previousSiteKey;
     localStorage.clear();
     sessionStorage.clear();
+    vi.useRealTimers();
   });
 
   async function openMenu() {
@@ -98,6 +103,26 @@ describe("AuthMenu", () => {
     expect(container.textContent).not.toContain("Riot ile");
     expect(container.querySelectorAll(".google-mark path")).toHaveLength(4);
     expect(container.querySelector("[data-testid='turnstile']")).toBeNull();
+  });
+
+  it("fades and closes the signed profile menu after the mouse leaves", async () => {
+    vi.useFakeTimers();
+    mocks.isPermanent = true;
+    mocks.overview = { username: "crew_user", email: "crew@example.com", avatarUrl: null };
+    await act(async () => root.render(<AuthMenu disabled={false} theme="light" />));
+    const trigger = container.querySelector<HTMLButtonElement>("button[aria-haspopup='menu']")!;
+    await act(async () => trigger.click());
+
+    const menuRoot = container.querySelector<HTMLElement>(".account-menu")!;
+    const pointerOut = new Event("pointerout", { bubbles: true });
+    Object.defineProperty(pointerOut, "pointerType", { value: "mouse" });
+    Object.defineProperty(pointerOut, "relatedTarget", { value: document.body });
+    await act(async () => menuRoot.dispatchEvent(pointerOut));
+    await act(async () => vi.advanceTimersByTime(180));
+
+    expect(container.querySelector(".signed-popover")?.classList.contains("closing")).toBe(true);
+    await act(async () => vi.advanceTimersByTime(140));
+    expect(container.querySelector(".signed-popover")).toBeNull();
   });
 
   it("opens password setup from persistent user metadata", async () => {

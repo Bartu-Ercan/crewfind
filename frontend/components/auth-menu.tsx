@@ -3,9 +3,10 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { Check, ChevronDown, KeyRound, LoaderCircle, LogIn, Mail, ShieldCheck, UserRound, X } from "lucide-react";
 import Link from "next/link";
-import { type FormEvent, useEffect, useId, useRef, useState } from "react";
+import { type FormEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import { getSupabaseBrowserClient } from "@/backend/supabase/browser-client";
 import { useAccount } from "@/frontend/components/account-provider";
+import { useDelayedHoverClose } from "@/frontend/hooks/use-delayed-hover-close";
 import {
   AUTH_MODAL_MODE_STORAGE_KEY,
   AUTH_NEEDS_PASSWORD_STORAGE_KEY,
@@ -69,6 +70,13 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
   const passwordVisible = mode === "login" || mode === "set-password" || (mode === "register" && !user?.is_anonymous);
   const captchaRequired = turnstileEnabled && (mode === "login" || mode === "reset" || (mode === "register" && !user?.is_anonymous));
   const captchaVisible = captchaRequired && emailFlowStarted;
+  const closeSignedPopover = useCallback(() => setOpen(false), []);
+  const {
+    closing: signedPopoverClosing,
+    cancelClose: cancelSignedPopoverClose,
+    handlePointerEnter: handleSignedPopoverPointerEnter,
+    handlePointerLeave: handleSignedPopoverPointerLeave,
+  } = useDelayedHoverClose(signedPopoverOpen, closeSignedPopover);
 
   useEffect(() => {
     const shouldSetPassword = sessionStorage.getItem(AUTH_MODAL_MODE_STORAGE_KEY) === "set-password"
@@ -301,7 +309,12 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
   if (loading) return <button className="account-trigger" disabled><LoaderCircle className="spin" size={15} /></button>;
 
   return (
-    <div className="account-menu" ref={rootRef}>
+    <div
+      className="account-menu"
+      ref={rootRef}
+      onPointerEnter={handleSignedPopoverPointerEnter}
+      onPointerLeave={handleSignedPopoverPointerLeave}
+    >
       <button
         ref={triggerRef}
         className={`account-trigger ${isPermanent ? "signed-in" : ""}`}
@@ -310,14 +323,17 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         aria-expanded={open}
         aria-haspopup={isPermanent ? "menu" : "dialog"}
         aria-label={overview?.username ? `${overview.username} hesap menüsü` : "Giriş menüsü"}
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          cancelSignedPopoverClose();
+          setOpen((value) => !value);
+        }}
       >
         {overview?.avatarUrl ? <span className="account-avatar" style={{ backgroundImage: `url(${overview.avatarUrl})` }} /> : <UserRound size={15} />}
         <span>{overview?.username ?? "Giriş yap"}</span>
         <ChevronDown size={14} className={open ? "open" : ""} />
       </button>
       {signedPopoverOpen && overview ? (
-        <div className="account-popover signed-popover" role="menu">
+        <div className={`account-popover signed-popover ${signedPopoverClosing ? "closing" : ""}`} role="menu">
           <div className="account-summary"><span>{overview.username}</span><small>{overview.email ?? "Bağlı hesap"}</small></div>
           <Link href="/hesabim" role="menuitem" onClick={() => setOpen(false)}><UserRound size={15} /> Hesabım</Link>
           <button type="button" role="menuitem" disabled={disabled} onClick={signOut}><LogIn size={15} /> Çıkış yap</button>
