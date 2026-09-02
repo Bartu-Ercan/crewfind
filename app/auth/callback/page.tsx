@@ -34,6 +34,10 @@ export default function AuthCallbackPage() {
         setError("Giriş isteği geçersiz.");
         return;
       }
+      if (localStorage.getItem(AUTH_PENDING_INTENT_STORAGE_KEY) !== intent) {
+        setError("Giriş isteği bu tarayıcıda başlatılmadı veya geçersiz.");
+        return;
+      }
       if (!code) {
         setError("Giriş bağlantısı geçersiz veya süresi dolmuş.");
         return;
@@ -48,7 +52,7 @@ export default function AuthCallbackPage() {
         sessionStorage.setItem(AUTH_MODAL_MODE_STORAGE_KEY, "set-password");
         localStorage.setItem(AUTH_NEEDS_PASSWORD_STORAGE_KEY, "true");
       }
-      consumePendingOAuthTerms(localStorage, intent, TERMS_VERSION);
+      consumePendingOAuthTerms(localStorage, intent, TERMS_VERSION, session.user.id);
       localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
       window.location.replace(next);
     };

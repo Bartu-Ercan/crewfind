@@ -2,6 +2,7 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { AUTH_PENDING_INTENT_STORAGE_KEY } from "@/frontend/lib/auth-flow";
 import AuthCallbackPage from "./page";
 
 const mocks = vi.hoisted(() => ({
@@ -31,6 +32,7 @@ describe("AuthCallbackPage", () => {
   beforeEach(() => {
     mocks.exchangeCodeForSession.mockReset();
     window.history.replaceState({}, "", "/auth/callback?code=pkce-code&intent=email-confirm&next=%2Fvalorant");
+    localStorage.setItem(AUTH_PENDING_INTENT_STORAGE_KEY, "email-confirm");
     container = document.createElement("div");
     document.body.append(container);
     root = createRoot(container);
@@ -64,5 +66,15 @@ describe("AuthCallbackPage", () => {
 
     expect(container.textContent).toContain("Giriş bağlantısı geçersiz veya süresi dolmuş.");
     expect(mocks.exchangeCodeForSession).toHaveBeenCalledOnce();
+  });
+
+  it("rejects a callback whose intent was changed", async () => {
+    localStorage.setItem(AUTH_PENDING_INTENT_STORAGE_KEY, "oauth-login");
+
+    await act(async () => root.render(<AuthCallbackPage />));
+    await act(async () => Promise.resolve());
+
+    expect(container.textContent).toContain("Giriş isteği bu tarayıcıda başlatılmadı veya geçersiz.");
+    expect(mocks.exchangeCodeForSession).not.toHaveBeenCalled();
   });
 });

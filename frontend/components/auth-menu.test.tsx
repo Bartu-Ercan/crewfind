@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   signInWithOAuth: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   linkIdentity: vi.fn(async () => ({ data: { provider: "google", url: "https://accounts.google.com" }, error: null })),
   updateUser: vi.fn(async () => ({ data: { user: null }, error: null as null | { code: string; message: string } })),
-  signUp: vi.fn(async () => ({ data: { user: null, session: null }, error: null })),
+  signInWithOtp: vi.fn(async () => ({ data: { user: null, session: null }, error: null })),
 }));
 
 vi.mock("@marsidev/react-turnstile", () => ({
@@ -26,7 +26,7 @@ vi.mock("@/backend/supabase/browser-client", () => ({
       linkIdentity: mocks.linkIdentity,
       signInWithOAuth: mocks.signInWithOAuth,
       signOut: vi.fn(async () => ({ error: null })),
-      signUp: mocks.signUp,
+      signInWithOtp: mocks.signInWithOtp,
       updateUser: mocks.updateUser,
     },
   }),
@@ -69,7 +69,7 @@ describe("AuthMenu", () => {
     mocks.signInWithOAuth.mockClear();
     mocks.linkIdentity.mockClear();
     mocks.updateUser.mockClear();
-    mocks.signUp.mockClear();
+    mocks.signInWithOtp.mockClear();
     mocks.user = null;
     mocks.overview = null;
     mocks.isPermanent = false;
@@ -164,13 +164,13 @@ describe("AuthMenu", () => {
     };
     await act(async () => {
       setValue(fields[0], "new@example.com");
-      setValue(fields[1], "password123");
     });
 
     expect(container.querySelector(".terms-check input")).not.toBeNull();
     await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
     expect(container.textContent).toContain("Gizlilik ve kullanım koşullarını kabul et.");
-    expect(mocks.signUp).not.toHaveBeenCalled();
+    expect(container.querySelector("input[type='password']")).toBeNull();
+    expect(mocks.signInWithOtp).not.toHaveBeenCalled();
   });
 
   it("mounts only an invisible background Turnstile after email interaction", async () => {
@@ -235,7 +235,7 @@ describe("AuthMenu", () => {
     );
   });
 
-  it("does not promise an email for an obfuscated repeated signup response", async () => {
+  it("uses the same email-only verification flow for a clean browser", async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_ENABLED = "false";
     await openMenu();
     const register = [...container.querySelectorAll<HTMLButtonElement>("button")]
@@ -248,14 +248,22 @@ describe("AuthMenu", () => {
     };
 
     await act(async () => {
-      setValue(fields[0], "registered@example.com");
-      setValue(fields[1], "password123");
-      fields[2].click();
+      setValue(fields[0], "new@example.com");
+      fields[1].click();
     });
     await act(async () => container.querySelector("form")!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
 
-    expect(mocks.signUp).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain("Yeni hesapsa doğrulama bağlantısı gönderildi. Gelmediyse adres zaten kayıtlı olabilir.");
-    expect(container.textContent).toContain("E-posta gelmediyse parola bağlantısı iste");
+    expect(mocks.signInWithOtp).toHaveBeenCalledWith({
+      email: "new@example.com",
+      options: expect.objectContaining({
+        shouldCreateUser: true,
+        data: expect.objectContaining({ needs_password: true }),
+      }),
+    });
+    expect(container.querySelector("input[type='password']")).toBeNull();
+    expect(container.textContent).toContain("E-postanı kontrol et. Doğrulama bağlantısından sonra parolanı oluştur.");
+    expect(container.textContent).toContain("E-posta adresini değiştir");
+    expect([...container.querySelectorAll<HTMLButtonElement>("button")].find((button) => button.textContent?.includes("Google ile devam et"))?.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>(".auth-submit")?.disabled).toBe(true);
   });
 });

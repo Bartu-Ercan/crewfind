@@ -12,7 +12,6 @@ import {
   AUTH_NEEDS_PASSWORD_STORAGE_KEY,
   AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY,
   AUTH_PENDING_INTENT_STORAGE_KEY,
-  AUTH_TERMS_STORAGE_KEY,
   buildAuthCallbackUrl,
 } from "@/frontend/lib/auth-flow";
 import { isEmailAlreadyRegisteredError, readableError } from "@/frontend/lib/error-messages";
@@ -67,7 +66,7 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
   const authModalOpen = open && (!isPermanent || mode === "set-password");
   const signedPopoverOpen = open && isPermanent && Boolean(overview) && mode !== "set-password";
   const anonymousEmailUpgrade = mode === "register" && Boolean(user?.is_anonymous);
-  const passwordVisible = mode === "login" || mode === "set-password" || (mode === "register" && !user?.is_anonymous);
+  const passwordVisible = mode === "login" || mode === "set-password";
   const captchaRequired = turnstileEnabled && (mode === "login" || mode === "reset" || (mode === "register" && !user?.is_anonymous));
   const captchaVisible = captchaRequired && emailFlowStarted;
   const closeSignedPopover = useCallback(() => setOpen(false), []);
@@ -250,7 +249,6 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         return;
       }
 
-      localStorage.setItem(AUTH_TERMS_STORAGE_KEY, TERMS_VERSION);
       if (user?.is_anonymous) {
         const { error: emailError } = await client.auth.updateUser(
           { email: email.trim(), data: { terms_version: TERMS_VERSION, needs_password: true } },
@@ -258,7 +256,6 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
         );
         if (emailError) {
           localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
-          localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
           if (isEmailAlreadyRegisteredError(emailError)) {
             setMode("login");
             setPassword("");
@@ -267,24 +264,23 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
           }
           setError(readableError(emailError));
         } else {
-          setMessage("E-posta doğrulama bağlantısı gönderildi. Bağlantıdan sonra parolanı oluştur.");
+          setMessage("E-postanı kontrol et. Doğrulama bağlantısından sonra parolanı oluştur.");
         }
         return;
       }
-      const { error: registerError } = await client.auth.signUp({
+      const { error: registerError } = await client.auth.signInWithOtp({
         email: email.trim(),
-        password,
         options: {
-          emailRedirectTo: callbackUrl("email-confirm"),
+          emailRedirectTo: callbackUrl("email-link"),
+          shouldCreateUser: true,
           captchaToken: captchaToken || undefined,
-          data: { terms_version: TERMS_VERSION, needs_password: false },
+          data: { terms_version: TERMS_VERSION, needs_password: true },
         },
       });
       if (registerError) {
         localStorage.removeItem(AUTH_PENDING_INTENT_STORAGE_KEY);
-        localStorage.removeItem(AUTH_TERMS_STORAGE_KEY);
         setError(readableError(registerError));
-      } else setMessage("Yeni hesapsa doğrulama bağlantısı gönderildi. Gelmediyse adres zaten kayıtlı olabilir.");
+      } else setMessage("E-postanı kontrol et. Doğrulama bağlantısından sonra parolanı oluştur.");
     } finally {
       setBusy(false);
       if (captchaRequired) resetCaptcha();
@@ -364,13 +360,13 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
             </p>
             {mode === "login" || mode === "register" ? (
               <div className="auth-mode-switch" aria-label="Giriş işlemi">
-                <button type="button" className={mode === "login" ? "selected" : ""} aria-pressed={mode === "login"} onClick={() => switchMode("login")}>Giriş yap</button>
-                <button type="button" className={mode === "register" ? "selected" : ""} aria-pressed={mode === "register"} onClick={() => switchMode("register")}>Hesap oluştur</button>
+                <button type="button" className={mode === "login" ? "selected" : ""} aria-pressed={mode === "login"} disabled={busy || Boolean(message)} onClick={() => switchMode("login")}>Giriş yap</button>
+                <button type="button" className={mode === "register" ? "selected" : ""} aria-pressed={mode === "register"} disabled={busy || Boolean(message)} onClick={() => switchMode("register")}>Hesap oluştur</button>
               </div>
             ) : null}
             {mode !== "reset" && mode !== "set-password" && socialEnabled ? (
               <div className="social-auth">
-                {googleEnabled ? <button type="button" disabled={busy} onClick={() => void social()}><GoogleMark /> Google ile devam et</button> : null}
+                {googleEnabled ? <button type="button" disabled={busy || Boolean(message)} onClick={() => void social()}><GoogleMark /> Google ile devam et</button> : null}
                 <p className="auth-social-consent">Google ile devam ederek <Link href="/kullanim-kosullari">Kullanım Koşulları</Link>nı ve <Link href="/gizlilik">Gizlilik Politikası</Link>nı kabul edersin.</p>
               </div>
             ) : null}
@@ -384,8 +380,8 @@ export function AuthMenu({ disabled, theme }: { disabled: boolean; theme: "light
                 {error ? <p className="auth-feedback error"><X size={14} />{error}</p> : null}
                 {message ? <p className="auth-feedback success"><Check size={14} />{message}</p> : null}
               </div>
-              {message && mode === "register" ? <button type="button" className="auth-recovery-link" onClick={() => switchMode("reset")}>E-posta gelmediyse parola bağlantısı iste</button> : null}
-              <button className="auth-submit" disabled={busy}>{busy ? <LoaderCircle className="spin" size={16} /> : <ShieldCheck size={16} />}{mode === "register" ? "Hesap oluştur" : mode === "reset" ? "Bağlantı gönder" : mode === "set-password" ? "Parolayı kaydet" : "Giriş yap"}</button>
+              {message && mode === "register" ? <button type="button" className="auth-recovery-link" onClick={() => { setMessage(""); setEmailFlowStarted(false); resetCaptcha(); }}>E-posta adresini değiştir</button> : null}
+              <button className="auth-submit" disabled={busy || Boolean(message)}>{busy ? <LoaderCircle className="spin" size={16} /> : <ShieldCheck size={16} />}{mode === "register" ? "Hesap oluştur" : mode === "reset" ? "Bağlantı gönder" : mode === "set-password" ? "Parolayı kaydet" : "Giriş yap"}</button>
             </form>
             {mode !== "set-password" ? <div className="auth-switch">
               {mode === "login" ? <button type="button" onClick={() => switchMode("reset")}>Parolamı unuttum</button> : mode === "reset" ? <button type="button" onClick={() => switchMode("login")}>Giriş ekranına dön</button> : null}

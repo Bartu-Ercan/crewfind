@@ -524,7 +524,14 @@ h3,
   line-height: 1.5;
 }
 
-.hero-copy .active-player-count {
+.hero-metrics {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+}
+
+.hero-copy .active-player-count,
+.hero-copy .matched-player-count {
   color: var(--text-muted);
   font-size: 12px;
 }
@@ -532,6 +539,11 @@ h3,
 .active-player-count strong {
   color: var(--text-secondary);
   font-weight: 600;
+}
+
+.matched-player-count strong {
+  color: var(--accent);
+  font-weight: 700;
 }
 
 .search-form {
@@ -907,9 +919,47 @@ h3,
   transition: background-color 180ms ease, color 180ms ease, filter 180ms ease;
 }
 
-.party-picker button:hover,
-.party-picker button.selected {
+.party-picker:not(.sliding-segmented) button:hover,
+.party-picker:not(.sliding-segmented) button.selected {
   background: var(--accent);
+  color: var(--on-accent);
+}
+
+.sliding-segmented {
+  position: relative;
+  isolation: isolate;
+}
+
+.segmented-indicator {
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 160ms cubic-bezier(.2, .8, .2, 1), opacity 100ms ease;
+  will-change: transform;
+}
+
+.segmented-indicator[data-ready="true"] {
+  opacity: 1;
+}
+
+.sliding-segmented > button {
+  position: relative;
+  z-index: 1;
+}
+
+.sliding-segmented > button:hover:not(:disabled),
+.sliding-segmented > button.selected {
+  background: transparent;
+}
+
+.sliding-segmented > button:hover:not(:disabled) {
+  color: var(--text-primary);
+}
+
+.sliding-segmented > button.selected {
   color: var(--on-accent);
 }
 
@@ -949,10 +999,21 @@ h3,
   color: var(--on-accent);
 }
 
+.role-picker.sliding-segmented button:hover:not(:disabled),
+.role-picker.sliding-segmented button.selected {
+  background: transparent;
+}
+
 .role-picker button:disabled {
   color: var(--text-muted);
   cursor: not-allowed;
   opacity: 0.38;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .segmented-indicator {
+    transition: none;
+  }
 }
 
 .field-help {

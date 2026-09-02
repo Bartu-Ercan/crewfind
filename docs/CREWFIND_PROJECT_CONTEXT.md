@@ -118,6 +118,13 @@ Kademe renkleri:
 - Mevcut grupla birlikte beş kişiyi aşacak seçenekler yerinde kalır, soluk gösterilir ve tıklanamaz.
 - Seçili değer accent dolgulu ve `1 kişi` gibi açık metinlidir.
 
+### Tek Seçimli Segmented Control Hareketi
+
+- Grup büyüklüğü, aranan kişi sayısı ve LoL Solo/Duo ana rolü gibi yalnız tek değer kabul eden kontrollerde accent dolgu yeni seçime 160 ms içinde kayar.
+- Hareket yalnız `transform` kullanır; kontrolün ölçüsünü değiştirmez, shadow veya glow eklemez.
+- LoL Flex rolleri gibi çoklu seçim alanlarında kayan tek dolgu kullanılmaz.
+- Sistem hareket azaltma tercihi açıksa geçiş animasyonu kapatılır.
+
 ### CTA Buton
 
 - Tam genişlik, rounded-full ve accent dolgulu.
@@ -170,10 +177,12 @@ Kademe renkleri:
 
 ## Canlı Kullanıcı Sayacı
 
-- Hero altında tek satır gerçek veri gösterir: `Şu an X oyuncu arıyor`.
+- Hero altında gerçek veriden iki sade satır gösterilir: `Şu an X oyuncu arıyor` ve `Şimdiye kadar Y oyuncu eşleşti`.
 - Dekoratif değildir.
 - `searching` kayıtları ve süresi dolmamış pending teklifler temsil ettikleri `party_size` toplamıyla sayılır.
-- Ana ekranda 15 saniyede bir güncellenir; veri alınamazsa sahte veya sıfır kabul edilen bir değer gösterilmez.
+- Kümülatif sayaç yalnız bütün katılımcıların kabul ettiği ve gerçek lobiye dönüşen eşleşmelerde temsil edilen `party_size` kadar artar; tekrar eşleşme yeni bir başarılı eşleşme katılımıdır.
+- İki sayaç ana ekranda 15 saniyede bir güncellenir; veri alınamazsa sahte veya sıfır kabul edilen bir değer gösterilmez.
+- Kümülatif rakam tasarımın mint/accent rengiyle vurgulanır; sayaç için kart, pill, glow veya animasyon kullanılmaz.
 
 ## Güvenlik Modeli
 
@@ -262,6 +271,7 @@ Kademe renkleri:
 - Başarılı arama sonrasında kullanılan Riot ID ve tam arama tercihi otomatik kaydedilir. Başarısız arama kayıt oluşturmaz; kayıt hatası başlamış aramayı iptal etmez. Ayrı `Kaydet` kontrolü kullanılmaz.
 - Misafir kayıtları versionlanmış localStorage verisidir; kalıcı hesaba geçişte yalnız kullanıcının seçtikleri buluta aktarılır.
 - Giriş ve hesap oluşturma akışı navbar popoverı değil, ortalanmış ve erişilebilir bir modaldır. Google ve e-posta/parola seçenekleri CrewFind tasarım diliyle gösterilir; Discord ve Riot girişleri hazır olana kadar gizlidir.
+- E-posta ile hesap oluşturma bütün tarayıcı ve işletim sistemlerinde önce yalnız e-posta ister. Doğrulama bağlantısı açılıp oturum kurulduktan sonra aynı modal `Parolanı oluştur` durumunda açılır; kayıt ekranında parola alanı bulunmaz.
 - Kalıcı hesap profil menüsü gerçek mouse alanı terk edince oyun seçiciyle aynı 180 ms tolerans ve 140 ms sade fade sonrasında kapanır. Fare geri dönerse kapanma iptal edilir; dokunmatik ve klavye davranışı değişmez.
 - Parola sınırı 8-72 karakterdir. Sözleşme kabulü kullanıcı tarafından açıkça verilmeden kaydedilmez.
 - Production adresi `https://crewfind.vercel.app` olarak kullanılır. Eski `crewfind-tr.vercel.app` adresi kalıcı yönlendirmedir.
@@ -306,6 +316,8 @@ Kademe renkleri:
 14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
 15. Tamamlandı: Küçük beta rozeti ve rate-limit korumalı, özel inbox'a dayanıklı geri bildirim akışı eklendi. SMTP bildirimi yalnız sunucu secret'ları üzerinden çalışır.
 16. Devam ediyor: Arama niyetli teknik ve içerik SEO paketi planlandı. Politika korumalı tek masaüstü AdSense rail altyapısı, `ads.txt`, rıza bayrağı ve organik paylaşım döngüsü tamamlandı; gerçek reklam yayını publisher/site/CMP onayını bekliyor.
+17. Tamamlandı: Platformdan bağımsız e-posta doğrulama/parola oluşturma akışı, tek seçimli kontrollerde kayan accent göstergesi ve gerçek kümülatif eşleşme sayacı uygulandı.
+18. Planlandı: Yalnız yetkili yöneticilere açık kapsamlı yönetim paneli. Sunucu tarafı RBAC, yeniden doğrulama, audit log, feature flag, kullanıcı moderasyonu, canlı sistem sağlığı ve anonimleştirilmiş ürün istatistikleri tasarlanmadan istemciye yönetim yetkisi verilmeyecek.
 
 ## Riot Developer Portal
 

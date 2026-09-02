@@ -40,6 +40,7 @@ select pg_temp.assert_fixed_window_limit('test:leave:minute', 10, 60);
 select pg_temp.assert_fixed_window_limit('test:message:10seconds', 12, 10);
 select pg_temp.assert_fixed_window_limit('test:message:minute', 60, 60);
 select pg_temp.assert_fixed_window_limit('test:active-player-count:minute', 20, 60);
+select pg_temp.assert_fixed_window_limit('test:matched-player-count:minute', 20, 60);
 
 do $$
 declare
@@ -66,6 +67,7 @@ begin
     'public.leave_current()'::regprocedure,
     'public.send_lobby_message(uuid,text)'::regprocedure,
     'public.get_active_player_count()'::regprocedure,
+    'public.get_matched_player_count()'::regprocedure,
     'public.reserve_lol_profile_lookup()'::regprocedure
   ] loop
     if (select prosecdef from pg_proc where oid = signature) then
@@ -76,7 +78,9 @@ begin
   if has_table_privilege('anon', 'private.rate_limit_buckets', 'select')
     or has_table_privilege('authenticated', 'private.rate_limit_buckets', 'select')
     or has_table_privilege('anon', 'private.rate_limit_secret', 'select')
-    or has_table_privilege('authenticated', 'private.rate_limit_secret', 'select') then
+    or has_table_privilege('authenticated', 'private.rate_limit_secret', 'select')
+    or has_table_privilege('anon', 'private.matchmaking_totals', 'select')
+    or has_table_privilege('authenticated', 'private.matchmaking_totals', 'select') then
     raise exception 'Rate limit private tabloları API rollerine açık';
   end if;
 

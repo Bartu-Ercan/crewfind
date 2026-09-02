@@ -34,6 +34,7 @@ import { QueueSelector } from "@/frontend/components/queue-selector";
 import { RankSelect } from "@/frontend/components/rank-select";
 import { RatingSelect } from "@/frontend/components/rating-select";
 import { ShareCrewFind } from "@/frontend/components/share-crewfind";
+import { SlidingSegmentedControl } from "@/frontend/components/sliding-segmented-control";
 import { DEMO_NAMES } from "@/frontend/config/demo";
 import { isRateLimitedError, rateLimitRetryAfter, readableError } from "@/frontend/lib/error-messages";
 import { readGuestAccounts, upsertGuestAccount } from "@/frontend/lib/guest-accounts";
@@ -116,6 +117,7 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   const [authReady, setAuthReady] = useState(false);
   const [notice, setNotice] = useState("");
   const [activePlayerCount, setActivePlayerCount] = useState<number | null>(null);
+  const [matchedPlayerCount, setMatchedPlayerCount] = useState<number | null>(null);
   const [lolProfileEnabled, setLolProfileEnabled] = useState(false);
   const [lolProfiles, setLolProfiles] = useState<Record<string, LolProfileState>>({});
   const [guestAccounts, setGuestAccounts] = useState<GuestRiotAccount[]>([]);
@@ -288,13 +290,19 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
   useEffect(() => {
     if (demoMode || !runtimeConfigured || view !== "home") return;
     let active = true;
-    const refreshCount = async () => {
-      const { data, error: countError } = await getSupabaseBrowserClient().rpc("get_active_player_count");
-      const count = Number(data);
-      if (active && !countError && Number.isInteger(count) && count >= 0) setActivePlayerCount(count);
+    const refreshCounts = async () => {
+      const client = getSupabaseBrowserClient();
+      const [activeResult, matchedResult] = await Promise.all([
+        client.rpc("get_active_player_count"),
+        client.rpc("get_matched_player_count"),
+      ]);
+      const activeCount = Number(activeResult.data);
+      const matchedCount = Number(matchedResult.data);
+      if (active && !activeResult.error && Number.isInteger(activeCount) && activeCount >= 0) setActivePlayerCount(activeCount);
+      if (active && !matchedResult.error && Number.isInteger(matchedCount) && matchedCount >= 0) setMatchedPlayerCount(matchedCount);
     };
-    void refreshCount();
-    const interval = setInterval(() => void refreshCount(), 15_000);
+    void refreshCounts();
+    const interval = setInterval(() => void refreshCounts(), 15_000);
     return () => { active = false; clearInterval(interval); };
   }, [demoMode, runtimeConfigured, view]);
 
@@ -656,7 +664,10 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
             <div className="eyebrow">Takım bulmanın kısa yolu</div>
             <h1>{config.heroTitle}</h1>
             <p>{config.heroDescription}</p>
-            {activePlayerCount !== null ? <p className="active-player-count">Şu an <strong>{activePlayerCount}</strong> oyuncu arıyor</p> : null}
+            {activePlayerCount !== null || matchedPlayerCount !== null ? <div className="hero-metrics" aria-live="polite">
+              {activePlayerCount !== null ? <p className="active-player-count">Şu an <strong>{activePlayerCount.toLocaleString("tr-TR")}</strong> oyuncu arıyor</p> : null}
+              {matchedPlayerCount !== null ? <p className="matched-player-count">Şimdiye kadar <strong>{matchedPlayerCount.toLocaleString("tr-TR")}</strong> oyuncu eşleşti</p> : null}
+            </div> : null}
           </div>
           <div className="search-stack">
           <form className="search-form" onSubmit={startSearch}>
@@ -681,13 +692,13 @@ export function CrewFindApp({ game }: CrewFindAppProps) {
               </div>
             )}
 
-            {game === "league-of-legends" && selectedQueue === "solo-duo" ? <p className="solo-queue-note">Solo/Duo için 1 takım arkadaşı aranır.</p> : <div className="field"><span>Kaç kişisiniz?</span><div className="party-picker">{[1, 2, 3, 4].map((size) => <button type="button" key={size} className={form.partySize === size ? "selected" : ""} onClick={() => updatePartySize(size)}>{form.partySize === size ? `${size} kişi` : size}</button>)}</div></div>}
+            {game === "league-of-legends" && selectedQueue === "solo-duo" ? <p className="solo-queue-note">Solo/Duo için 1 takım arkadaşı aranır.</p> : <div className="field"><span>Kaç kişisiniz?</span><SlidingSegmentedControl className="party-picker" value={form.partySize} onChange={updatePartySize} options={[1, 2, 3, 4].map((size) => ({ value: size, label: size, selectedLabel: `${size} kişi` }))} /></div>}
 
             {game === "league-of-legends" ? (
-              <div className="field"><span>Takımınızdaki roller</span><div className="role-picker">{LOL_ROLES.map((role) => { const selected = form.roles.includes(role.value); const soloQueue = selectedQueue === "solo-duo"; const full = form.roles.length >= form.partySize; return <button type="button" key={role.value} className={selected ? "selected" : ""} disabled={!soloQueue && !selected && full} onClick={() => setForm((current) => ({ ...current, roles: soloQueue ? [role.value] : current.roles.includes(role.value) ? current.roles.filter((value) => value !== role.value) : [...current.roles, role.value] }))}>{role.label}{selected ? <Check size={14} /> : null}</button>; })}</div><small className="field-help">{form.roles.length}/{form.partySize} rol seçildi</small></div>
+              <div className="field"><span>Takımınızdaki roller</span>{selectedQueue === "solo-duo" ? <SlidingSegmentedControl className="role-picker" value={form.roles[0] ?? LOL_ROLES[0].value} onChange={(role) => setForm((current) => ({ ...current, roles: [role] }))} options={LOL_ROLES.map((role) => ({ value: role.value, label: role.label, selectedLabel: <>{role.label}<Check size={14} /></> }))} /> : <div className="role-picker">{LOL_ROLES.map((role) => { const selected = form.roles.includes(role.value); const full = form.roles.length >= form.partySize; return <button type="button" key={role.value} className={selected ? "selected" : ""} disabled={!selected && full} onClick={() => setForm((current) => ({ ...current, roles: current.roles.includes(role.value) ? current.roles.filter((value) => value !== role.value) : [...current.roles, role.value] }))}>{role.label}{selected ? <Check size={14} /> : null}</button>; })}</div>}<small className="field-help">{form.roles.length}/{form.partySize} rol seçildi</small></div>
             ) : null}
 
-            {game === "league-of-legends" && selectedQueue === "solo-duo" ? null : <div className="field"><span>Kaç kişi arıyorsunuz?</span><div className="party-picker search-count-picker">{[1, 2, 3, 4].map((requested) => { const unavailable = requested > 5 - form.partySize; return <button type="button" key={requested} className={form.targetSize - form.partySize === requested ? "selected" : ""} disabled={unavailable} onClick={() => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))}>{form.targetSize - form.partySize === requested ? `${requested} kişi` : requested}</button>; })}</div></div>}
+            {game === "league-of-legends" && selectedQueue === "solo-duo" ? null : <div className="field"><span>Kaç kişi arıyorsunuz?</span><SlidingSegmentedControl className="party-picker search-count-picker" value={form.targetSize - form.partySize} onChange={(requested) => setForm((current) => ({ ...current, targetSize: current.partySize + requested }))} options={[1, 2, 3, 4].map((requested) => ({ value: requested, label: requested, selectedLabel: `${requested} kişi`, disabled: requested > 5 - form.partySize }))} /></div>}
 
             {game === "cs2" && selectedQueue === "competitive" ? <p className="filter-summary">{selectionLabel(CS2_MAPS, form.maps, "Harita seçilmedi")}</p> : null}
             {!demoMode && turnstileEnabled && turnstileSiteKey && needsCaptcha ? <Turnstile className="turnstile-sentinel" ref={turnstileRef} siteKey={turnstileSiteKey} onSuccess={(token) => { setCaptchaToken(token); setError(""); }} onExpire={() => { setCaptchaToken(""); turnstileRef.current?.reset(); }} onError={() => { setCaptchaToken(""); setError("Güvenlik kontrolü yüklenemedi. Tekrar dene."); window.setTimeout(() => turnstileRef.current?.reset(), 250); }} options={{ action: "anonymous_session", size: "invisible", tabIndex: -1, responseField: false, theme }} /> : null}

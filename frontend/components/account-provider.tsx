@@ -56,8 +56,10 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
       return;
     }
-    const acceptedTermsVersion = localStorage.getItem(AUTH_TERMS_STORAGE_KEY)
-      ?? String(nextUser.user_metadata?.terms_version ?? "");
+    const pendingTerms = localStorage.getItem(AUTH_TERMS_STORAGE_KEY);
+    const acceptedTermsVersion = pendingTerms === `${nextUser.id}:${TERMS_VERSION}`
+      ? TERMS_VERSION
+      : String(nextUser.user_metadata?.terms_version ?? "");
     if (error || acceptedTermsVersion !== TERMS_VERSION) {
       setOverview(null);
       setLoading(false);

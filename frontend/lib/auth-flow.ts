@@ -59,10 +59,11 @@ export function consumePendingOAuthTerms(
   storage: Pick<Storage, "getItem" | "setItem" | "removeItem">,
   intent: AuthCallbackIntent,
   termsVersion: string,
+  userId: string,
 ) {
   if (intent !== "oauth-login" && intent !== "oauth-link") return false;
   if (storage.getItem(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY) !== termsVersion) return false;
-  storage.setItem(AUTH_TERMS_STORAGE_KEY, termsVersion);
+  storage.setItem(AUTH_TERMS_STORAGE_KEY, `${userId}:${termsVersion}`);
   storage.removeItem(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY);
   return true;
 }

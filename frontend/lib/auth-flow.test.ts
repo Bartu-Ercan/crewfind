@@ -47,10 +47,10 @@ describe("auth callback flow", () => {
       removeItem: (key: string) => values.delete(key),
     };
 
-    expect(consumePendingOAuthTerms(storage, "email-confirm", "2026-08-29")).toBe(false);
+    expect(consumePendingOAuthTerms(storage, "email-confirm", "2026-08-29", "user-1")).toBe(false);
     expect(values.has(AUTH_TERMS_STORAGE_KEY)).toBe(false);
-    expect(consumePendingOAuthTerms(storage, "oauth-login", "2026-08-29")).toBe(true);
-    expect(values.get(AUTH_TERMS_STORAGE_KEY)).toBe("2026-08-29");
+    expect(consumePendingOAuthTerms(storage, "oauth-login", "2026-08-29", "user-1")).toBe(true);
+    expect(values.get(AUTH_TERMS_STORAGE_KEY)).toBe("user-1:2026-08-29");
     expect(values.has(AUTH_OAUTH_TERMS_PENDING_STORAGE_KEY)).toBe(false);
   });
 });
