@@ -274,7 +274,7 @@ Kademe renkleri:
 ## Reklam ve Organik Büyüme
 
 - AdSense etiketi hesap/site onayı ve Google onaylı rıza yönetimi tamamlanmadan yüklenmez. Bu iki koşul ayrı production bayraklarıyla zorlanır.
-- Aynalanmış iki sticky reklam kullanılmaz. Yalnız 1440 px ve üzeri geniş, en az 720 px yüksek masaüstünde tek sağ `160x600` rail ayrılır; mobil ve tablette reklam gösterilmez.
+- Aynalanmış iki sticky reklam kullanılmaz. Yalnız 1440 px ve üzeri geniş, en az 720 px yüksek masaüstünde tek `160x600` rail gösterilir; oturum başına sağ veya sol taraf seçilir ve trafik iki tarafa eşit dağıtılır. Merkez içerik konum değiştirmez; mobil ve tablette reklam gösterilmez.
 - Reklam yalnız public ana arama ve eşleştirme bekleme görünümünde bulunabilir. Teklif, lobi ve özel sohbet görünümünde kesinlikle render edilmez.
 - Reklam `Reklam` etiketiyle içerikten ayrılır; CTA'ya dikkat çeken ok, animasyon, tıklama teşviki veya otomatik yenileme kullanılmaz.
 - Publisher kimliği yoksa reklam kutusu veya sahte placeholder gösterilmez. `/ads.txt` yalnız geçerli sunucu tarafı publisher kimliğiyle yayınlanır.

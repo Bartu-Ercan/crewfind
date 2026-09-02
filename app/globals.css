@@ -1983,7 +1983,6 @@ h3,
     position: fixed;
     z-index: 4;
     top: 50%;
-    right: max(24px, calc(50% - 690px));
     width: 160px;
     height: 620px;
     display: grid;
@@ -1991,6 +1990,14 @@ h3,
     justify-items: center;
     gap: 6px;
     transform: translateY(-50%);
+  }
+
+  .adsense-rail[data-side="right"] {
+    right: max(24px, calc(50% - 690px));
+  }
+
+  .adsense-rail[data-side="left"] {
+    left: max(24px, calc(50% - 690px));
   }
 }
 
