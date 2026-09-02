@@ -45,6 +45,9 @@ describe("FeedbackWidget", () => {
   it("keeps the entry point compact and opens an accessible modal", async () => {
     await open();
 
+    const trigger = container.querySelector<HTMLButtonElement>(".feedback-footer button")!;
+    expect(trigger.type).toBe("button");
+    expect(trigger.textContent).toBe("Fikir ve öneri");
     expect(container.querySelector("[role='dialog']")).not.toBeNull();
     expect(container.textContent).toContain("Fikrini paylaş");
     expect(document.body.style.overflow).toBe("hidden");

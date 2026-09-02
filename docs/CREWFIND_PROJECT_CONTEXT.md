@@ -269,7 +269,16 @@ Kademe renkleri:
 - Beta e-postaları custom Gmail SMTP üzerinden gönderilir ve gönderen kişisel Gmail adresidir. CrewFind adına ait doğrulanmış özel alan adı alınmadan gönderen adresi değiştirilmeyecek; genel lansmandan önce alan adı tabanlı transactional e-posta sağlayıcısına geçilecektir.
 - Doğrulama e-postası CrewFind mint/grafit dilinde, büyük tek eylem düğmesi ve düz bağlantı yedeği kullanır. Auth callback yalnız bir kez işlenir; Supabase istemcisinin otomatik URL tüketimi kapalıdır ve PKCE kodu callback içinde açıkça `exchangeCodeForSession` ile tüketilmeden işlem başarılı sayılmaz. Anonim e-posta yükseltmesinde `needs_password` kullanıcı metadata işareti parola oluşturulana kadar korunur; modal yalnız tarayıcı deposuna bağlı kalmadan yeniden açılır. Misafir profil aktarımı parola oluşturma tamamlanana kadar gösterilmez.
 - CrewFind yayın öncesi beta olarak etiketlenir. Logo mikro animasyonunun ölçüsünü değiştirmeyen küçük `BETA` rozeti bütün ürün ve yasal sayfalarda görünür.
-- Oyun sayfalarının sol altında sabit, kolay fark edilen fakat gölgesiz `Fikir ve öneri` beta pill'i bulunur. Pill ana formu kapatmaz; mint yüzey, ince accent border ve kısa alt metinle görünürlük kazanır. Ortalanmış modal öneri, hata ve diğer geri bildirim türlerini; mesajı ve isteğe bağlı yanıt e-postasını alır. Mesaj önce Data API'ye kapalı özel tabloda saklanır, ardından yalnız sunucu tarafındaki SMTP yapılandırmasıyla e-posta bildirimi gönderilir. E-posta teslimatı başarısız olsa bile geri bildirim kaybolmaz.
+- Ana arama formunun hemen altında ortalanmış, tek satırlı ve gölgesiz `Fikir ve öneri` kontrolü bulunur. İlk ekranda görünür kalır; yanında native share veya bağlantı kopyalama kullanan `CrewFind’i paylaş` kontrolü yer alır. Ortalanmış modal öneri, hata ve diğer geri bildirim türlerini; mesajı ve isteğe bağlı yanıt e-postasını alır. Mesaj önce Data API'ye kapalı özel tabloda saklanır, ardından yalnız sunucu tarafındaki SMTP yapılandırmasıyla e-posta bildirimi gönderilir. E-posta teslimatı başarısız olsa bile geri bildirim kaybolmaz.
+
+## Reklam ve Organik Büyüme
+
+- AdSense etiketi hesap/site onayı ve Google onaylı rıza yönetimi tamamlanmadan yüklenmez. Bu iki koşul ayrı production bayraklarıyla zorlanır.
+- Aynalanmış iki sticky reklam kullanılmaz. Yalnız 1440 px ve üzeri geniş, en az 720 px yüksek masaüstünde tek sağ `160x600` rail ayrılır; mobil ve tablette reklam gösterilmez.
+- Reklam yalnız public ana arama ve eşleştirme bekleme görünümünde bulunabilir. Teklif, lobi ve özel sohbet görünümünde kesinlikle render edilmez.
+- Reklam `Reklam` etiketiyle içerikten ayrılır; CTA'ya dikkat çeken ok, animasyon, tıklama teşviki veya otomatik yenileme kullanılmaz.
+- Publisher kimliği yoksa reklam kutusu veya sahte placeholder gösterilmez. `/ads.txt` yalnız geçerli sunucu tarafı publisher kimliğiyle yayınlanır.
+- Ücretsiz büyümenin ana ürün döngüsü oyun route'una doğrudan giden native paylaşım/kopyalama kontrolüdür. Topluluk gönderileri yalnız moderatör izniyle, tekil ve geri bildirim odaklı yapılır; toplu DM veya link spam kullanılmaz.
 
 ## Negatif Kısıtlar
 
@@ -296,7 +305,7 @@ Kademe renkleri:
 13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
 14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
 15. Tamamlandı: Küçük beta rozeti ve rate-limit korumalı, özel inbox'a dayanıklı geri bildirim akışı eklendi. SMTP bildirimi yalnız sunucu secret'ları üzerinden çalışır.
-16. Planlandı: Arama niyetli teknik ve içerik SEO paketi; ardından masaüstü geniş ekranlarda yalnız boş yan kolonlarda gösterilecek, ana formu ve mobil deneyimi etkilemeyecek reklam yerleşimi.
+16. Devam ediyor: Arama niyetli teknik ve içerik SEO paketi planlandı. Politika korumalı tek masaüstü AdSense rail altyapısı, `ads.txt`, rıza bayrağı ve organik paylaşım döngüsü tamamlandı; gerçek reklam yayını publisher/site/CMP onayını bekliyor.
 
 ## Riot Developer Portal
 

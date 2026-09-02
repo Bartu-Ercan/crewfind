@@ -541,6 +541,12 @@ h3,
   gap: 16px;
 }
 
+.search-stack {
+  width: 100%;
+  display: grid;
+  gap: 10px;
+}
+
 .field {
   min-width: 0;
   flex: 1;
@@ -1911,51 +1917,81 @@ h3,
 .import-actions .ghost-button { min-height: 42px; }
 
 .feedback-footer {
-  position: fixed;
-  z-index: 60;
-  left: 20px;
-  bottom: calc(20px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
 }
 
-.feedback-footer > button {
-  min-height: 44px;
-  padding: 0 14px;
+.home-support-actions {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.feedback-footer > button,
+.share-site-button {
+  min-height: 34px;
+  padding: 0 11px;
   display: inline-flex;
   align-items: center;
-  gap: 9px;
-  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid transparent;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--surface) 88%, var(--accent-soft));
-  color: var(--accent);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 650;
   transition: color 140ms ease, border-color 140ms ease, background-color 140ms ease;
 }
 
 .feedback-footer > button:hover,
-.feedback-footer > button:focus-visible {
-  border-color: color-mix(in srgb, var(--accent) 54%, var(--border));
+.feedback-footer > button:focus-visible,
+.share-site-button:hover,
+.share-site-button:focus-visible {
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--border));
   background: var(--accent-soft);
   color: var(--text-primary);
   outline: 0;
 }
 
-.feedback-trigger-copy {
-  display: grid;
-  gap: 1px;
-  text-align: left;
+.feedback-footer svg,
+.share-site-button svg {
+  color: var(--accent);
 }
 
-.feedback-trigger-copy strong {
-  color: var(--text-primary);
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.15;
+.adsense-rail {
+  display: none;
 }
 
-.feedback-trigger-copy small {
-  color: var(--text-secondary);
+.adsense-rail > span {
+  color: var(--text-muted);
   font-size: 8px;
-  font-weight: 550;
-  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.adsense-rail .adsbygoogle {
+  width: 160px;
+  height: 600px;
+  display: block;
+}
+
+@media (min-width: 1440px) and (min-height: 720px) {
+  .adsense-rail {
+    position: fixed;
+    z-index: 4;
+    top: 50%;
+    right: max(24px, calc(50% - 690px));
+    width: 160px;
+    height: 620px;
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    gap: 6px;
+    transform: translateY(-50%);
+  }
 }
 
 .feedback-backdrop {
@@ -2285,8 +2321,9 @@ h3,
   .account-popover.auth-modal { position: relative; inset: auto; width: calc(100vw - 32px); max-height: calc(100dvh - 32px); padding: 24px; }
   .auth-modal-backdrop { padding: 16px; }
   .feedback-backdrop { padding: 16px; }
-  .feedback-footer { left: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
-  .feedback-footer > button { min-height: 42px; padding: 0 12px; }
+  .home-support-actions { gap: 2px; }
+  .feedback-footer > button,
+  .share-site-button { padding: 0 9px; }
   .feedback-dialog { max-height: calc(100dvh - 32px); padding: 24px; }
   .feedback-actions { align-items: stretch; flex-direction: column; }
   .feedback-actions > span { max-width: none; text-align: center; }

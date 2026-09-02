@@ -126,15 +126,12 @@ export function FeedbackWidget({ sourcePath }: { sourcePath: string }) {
 
   return (
     <>
-      <footer className="feedback-footer">
+      <div className="feedback-footer">
         <button ref={triggerRef} type="button" onClick={() => setOpen(true)}>
-          <MessageSquareText size={16} />
-          <span className="feedback-trigger-copy">
-            <strong>Fikir ve öneri</strong>
-            <small>Beta’yı birlikte geliştirelim</small>
-          </span>
+          <MessageSquareText size={15} />
+          Fikir ve öneri
         </button>
-      </footer>
+      </div>
       {open ? (
         <div className="feedback-backdrop" onPointerDown={(event) => { if (event.target === event.currentTarget) close(); }}>
           <section
