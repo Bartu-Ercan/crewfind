@@ -128,8 +128,11 @@ export function FeedbackWidget({ sourcePath }: { sourcePath: string }) {
     <>
       <footer className="feedback-footer">
         <button ref={triggerRef} type="button" onClick={() => setOpen(true)}>
-          <MessageSquareText size={14} />
-          Fikir ve öneri
+          <MessageSquareText size={16} />
+          <span className="feedback-trigger-copy">
+            <strong>Fikir ve öneri</strong>
+            <small>Beta’yı birlikte geliştirelim</small>
+          </span>
         </button>
       </footer>
       {open ? (
