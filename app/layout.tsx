@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Hanken_Grotesk, Rajdhani } from "next/font/google";
-import { bilingualDescription, canonicalUrl, seo, siteName, siteUrl } from "@/frontend/config/seo";
+import { canonicalUrl, seo, siteName, siteUrl, socialImage } from "@/frontend/config/seo";
 import { AccountProvider } from "@/frontend/components/account-provider";
 import { GuestImportDialog } from "@/frontend/components/guest-import-dialog";
 import "./globals.css";
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: siteName,
   title: {
-    default: seo.title,
+    default: `${seo.title} | ${siteName}`,
     template: `%s | ${siteName}`,
   },
   description: seo.description,
@@ -35,15 +35,16 @@ export const metadata: Metadata = {
     type: "website",
     url: canonicalUrl,
     siteName,
-    title: seo.title,
-    description: bilingualDescription,
+    title: `${seo.title} | ${siteName}`,
+    description: seo.description,
     locale: "tr_TR",
-    alternateLocale: ["en_US"],
+    images: [socialImage],
   },
   twitter: {
-    card: "summary",
-    title: seo.englishTitle,
-    description: seo.englishDescription,
+    card: "summary_large_image",
+    title: `${seo.title} | ${siteName}`,
+    description: seo.description,
+    images: [socialImage.url],
   },
   robots: {
     index: true,
@@ -58,9 +59,7 @@ export const metadata: Metadata = {
   },
   category: "gaming",
   other: {
-    "content-language": "tr-TR, en-US",
-    "og:title:en": seo.englishTitle,
-    "og:description:en": seo.englishDescription,
+    "content-language": "tr-TR",
   },
 };
 

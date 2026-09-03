@@ -283,6 +283,9 @@ Kademe renkleri:
 
 ## Reklam ve Organik Büyüme
 
+- Oyun route'larında arama niyetini doğrudan anlatan tek H1, ilk ekranın altında görünür ve faydalı kısa eşleştirme rehberi, kalıcı oyun bağlantıları ve route'a özel Türkçe metadata bulunur.
+- Auth callback ve hesap yönetimi gibi özel akışlar `noindex` olur. Sitemap yalnız gerçek, canonical ve public sayfaları içerir; değişmeyen sayfalara her build'de sahte güncelleme tarihi verilmez.
+- SEO metinleri oyuncunun gerçek sorusunu cevaplar; anahtar kelime doldurma, sahte sayfalar, satın alınmış bağlantı veya topluluklarda link spam kullanılmaz.
 - AdSense etiketi hesap/site onayı ve Google onaylı rıza yönetimi tamamlanmadan yüklenmez. Bu iki koşul ayrı production bayraklarıyla zorlanır.
 - Aynalanmış iki sticky reklam kullanılmaz. Yalnız 1440 px ve üzeri geniş, en az 720 px yüksek masaüstünde tek `160x600` rail gösterilir; oturum başına sağ veya sol taraf seçilir ve trafik iki tarafa eşit dağıtılır. Merkez içerik konum değiştirmez; mobil ve tablette reklam gösterilmez.
 - Reklam yalnız public ana arama ve eşleştirme bekleme görünümünde bulunabilir. Teklif, lobi ve özel sohbet görünümünde kesinlikle render edilmez.
@@ -315,7 +318,7 @@ Kademe renkleri:
 13. Tamamlandı: 250 aktif aday ölçeğinde uygulama benchmarkı, rollback kullanan gerçek Postgres testi ve 30 paralel rate-limit çağrısı çalıştırıldı; oyun izolasyonu, 50 tam takım, atomik kota ve kalıcı test verisi bırakılmaması doğrulandı.
 14. Devam ediyor: 390x844 mobil ve 1440x900 masaüstü tarayıcı matrisi, açık/koyu tema, yatay taşma ve giriş modalı erişilebilirlik testleri tamamlandı. Google girişinde checkbox kaldırıldı ve başarılı OAuth dönüşüne bağlı sözleşme kaydı eklendi. Kalan iş doğrulanmış özel alan adıyla dış e-posta teslimatı ve production Google dönüşünün son kabul testidir.
 15. Tamamlandı: Küçük beta rozeti ve rate-limit korumalı, özel inbox'a dayanıklı geri bildirim akışı eklendi. SMTP bildirimi yalnız sunucu secret'ları üzerinden çalışır.
-16. Devam ediyor: Arama niyetli teknik ve içerik SEO paketi planlandı. Politika korumalı tek masaüstü AdSense rail altyapısı, `ads.txt`, rıza bayrağı ve organik paylaşım döngüsü tamamlandı; gerçek reklam yayını publisher/site/CMP onayını bekliyor.
+16. Devam ediyor: Arama niyetli teknik ve görünür içerik SEO paketi tamamlandı. Politika korumalı tek masaüstü AdSense rail altyapısı, `ads.txt`, organik paylaşım döngüsü ve Google'ın üç seçenekli CMP kurulumu tamamlandı; site incelemesi sürüyor ve gerçek reklam yayını AdSense onayı ile reklam birimi slotunu bekliyor.
 17. Tamamlandı: Platformdan bağımsız e-posta doğrulama/parola oluşturma akışı, tek seçimli kontrollerde kayan accent göstergesi ve gerçek kümülatif eşleşme sayacı uygulandı.
 18. Planlandı: Yalnız yetkili yöneticilere açık kapsamlı yönetim paneli. Sunucu tarafı RBAC, yeniden doğrulama, audit log, feature flag, kullanıcı moderasyonu, canlı sistem sağlığı ve anonimleştirilmiş ürün istatistikleri tasarlanmadan istemciye yönetim yetkisi verilmeyecek.
 

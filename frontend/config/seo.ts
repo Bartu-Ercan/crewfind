@@ -24,12 +24,9 @@ export const siteUrl = normalizeSiteUrl(
 export const siteName = "CrewFind";
 
 export const seo = {
-  title: "CrewFind - VALORANT Takım Arkadaşı Bul",
-  englishTitle: "CrewFind - VALORANT Team Finder",
+  title: "VALORANT Takım Arkadaşı ve 5. Oyuncu Bul",
   description:
-    "CrewFind ile VALORANT için rankına uygun takım arkadaşları bul, eksik oyuncunu saniyeler içinde tamamla ve özel lobide buluş.",
-  englishDescription:
-    "Find VALORANT teammates by rank, complete your squad in seconds, and meet your matched players in a private lobby with CrewFind.",
+    "VALORANT takım arkadaşı bul. Rank, ortak sunucu ve sıra tercihine göre eşleş; eksik oyuncunu tamamlayıp özel lobide buluş.",
   keywords: [
     "CrewFind",
     "VALORANT takım bulma",
@@ -37,30 +34,21 @@ export const seo = {
     "VALORANT ekip bul",
     "VALORANT oyuncu bul",
     "VALORANT duo bul",
-    "VALORANT 5 stack",
-    "VALORANT team finder",
-    "find VALORANT teammates",
-    "VALORANT LFG",
-    "VALORANT squad finder",
-    "ranked VALORANT teammates",
+    "VALORANT 5. oyuncu bul",
   ],
 };
 
 export const gameSeo: Record<GameId, typeof seo> = {
   valorant: seo,
   "league-of-legends": {
-    title: "CrewFind - League of Legends Takım Arkadaşı Bul",
-    englishTitle: "CrewFind - League of Legends Team Finder",
-    description: "CrewFind ile League of Legends için sunucu, sıra, rank ve rollere uygun takım arkadaşları bul.",
-    englishDescription: "Find League of Legends teammates by server, queue, rank, and role with CrewFind.",
-    keywords: ["CrewFind", "LoL takım bulma", "League of Legends takım arkadaşı", "LoL duo bul", "LoL LFG", "League of Legends team finder"],
+    title: "LoL Duo ve Takım Arkadaşı Bul",
+    description: "LoL takım arkadaşı bul. TR1 veya EUW1'de Solo/Duo ve Flex için rankına ve takım rollerine uygun oyuncularla eşleş.",
+    keywords: ["CrewFind", "LoL takım bulma", "League of Legends takım arkadaşı", "LoL duo bul", "LoL Flex takım bulma", "LoL LFG"],
   },
   cs2: {
-    title: "CrewFind - Counter-Strike 2 Takım Arkadaşı Bul",
-    englishTitle: "CrewFind - Counter-Strike 2 Team Finder",
-    description: "CrewFind ile CS2 Premier veya Competitive için rating, bağlantı bölgesi ve haritalara uygun takım arkadaşları bul.",
-    englishDescription: "Find CS2 Premier or Competitive teammates by rating, region, and map with CrewFind.",
-    keywords: ["CrewFind", "CS2 takım bulma", "Counter-Strike 2 takım arkadaşı", "CS2 Premier takım", "CS2 LFG", "CS2 team finder"],
+    title: "CS2 Takım Arkadaşı Bul",
+    description: "CS2 takım arkadaşı bul. Premier veya Competitive için rating, bağlantı bölgesi ve ortak harita tercihlerine göre takımını tamamla.",
+    keywords: ["CrewFind", "CS2 takım bulma", "Counter-Strike 2 takım arkadaşı", "CS2 Premier takım", "CS2 Competitive takım", "CS2 LFG"],
   },
 };
 
@@ -68,9 +56,17 @@ export function canonicalUrlFor(path: string) {
   return new URL(path, siteUrl).toString();
 }
 
+export const socialImage = {
+  url: canonicalUrlFor("/opengraph-image"),
+  width: 1200,
+  height: 630,
+  alt: "CrewFind ile VALORANT, League of Legends ve CS2 takım arkadaşı bul",
+};
+
 export function metadataFor(game: GameId, path: string): Metadata {
   const value = gameSeo[game];
   const canonical = canonicalUrlFor(path);
+  const socialTitle = `${value.title} | ${siteName}`;
   return {
     title: value.title,
     description: value.description,
@@ -80,12 +76,12 @@ export function metadataFor(game: GameId, path: string): Metadata {
       type: "website",
       url: canonical,
       siteName,
-      title: value.title,
-      description: `${value.description} ${value.englishDescription}`,
+      title: socialTitle,
+      description: value.description,
       locale: "tr_TR",
-      alternateLocale: ["en_US"],
+      images: [socialImage],
     },
-    twitter: { card: "summary", title: value.englishTitle, description: value.englishDescription },
+    twitter: { card: "summary_large_image", title: socialTitle, description: value.description, images: [socialImage.url] },
   };
 }
 
@@ -95,16 +91,21 @@ export function jsonLdFor(game: GameId, path: string) {
     "@context": "https://schema.org",
     "@type": "WebApplication",
     name: siteName,
-    alternateName: [value.englishTitle, `${GAME_LABELS[game]} takım bulma`, `${GAME_LABELS[game]} team finder`],
+    alternateName: [`${GAME_LABELS[game]} takım bulma`, `${GAME_LABELS[game]} takım arkadaşı bul`],
     url: canonicalUrlFor(path),
     applicationCategory: "GameApplication",
     operatingSystem: "Web",
-    inLanguage: ["tr-TR", "en-US"],
-    description: `${value.description} ${value.englishDescription}`,
+    inLanguage: "tr-TR",
+    description: value.description,
     keywords: value.keywords.join(", "),
+    isAccessibleForFree: true,
     offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
     audience: { "@type": "Audience", audienceType: `${GAME_LABELS[game]} players` },
   };
+}
+
+export function serializeJsonLd(value: unknown) {
+  return JSON.stringify(value).replace(/</g, "\\u003c");
 }
 
 const GAME_LABELS: Record<GameId, string> = {
@@ -114,5 +115,3 @@ const GAME_LABELS: Record<GameId, string> = {
 };
 
 export const canonicalUrl = canonicalUrlFor("/valorant");
-
-export const bilingualDescription = `${seo.description} ${seo.englishDescription}`;
