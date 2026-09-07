@@ -25,6 +25,7 @@ const CALLBACK_PATHS = new Set([
   "/league-of-legends",
   "/cs2",
   "/hesabim",
+  "/admin",
 ]);
 
 export function parseAuthCallbackIntent(value: string | null): AuthCallbackIntent | null {

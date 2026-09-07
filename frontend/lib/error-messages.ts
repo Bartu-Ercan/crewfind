@@ -61,6 +61,9 @@ export function readableError(caught: unknown) {
     return "Çok fazla istek gönderildi. Kısa süre sonra tekrar dene.";
   }
 
+  if (message === "MATCHMAKING_PAUSED") return "Yeni aramalar bakım nedeniyle kısa süreliğine durduruldu. Mevcut lobiler devam ediyor.";
+  if (message === "ACCOUNT_RESTRICTED") return "Bu hesabın arama ve sohbet erişimi geçici olarak kısıtlandı.";
+
   if (isEmailAlreadyRegisteredError(caught)) {
     return "Bu e-posta zaten kayıtlı. Giriş yap veya parolanı yenile.";
   }
