@@ -9,8 +9,9 @@ export default function Cs2Page() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <CrewFindApp game="cs2" />
-      <GameSeoContent game="cs2" />
+      <CrewFindApp game="cs2">
+        <GameSeoContent game="cs2" />
+      </CrewFindApp>
     </>
   );
 }

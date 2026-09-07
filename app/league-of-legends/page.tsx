@@ -9,8 +9,9 @@ export default function LeagueOfLegendsPage() {
   return (
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }} />
-      <CrewFindApp game="league-of-legends" />
-      <GameSeoContent game="league-of-legends" />
+      <CrewFindApp game="league-of-legends">
+        <GameSeoContent game="league-of-legends" />
+      </CrewFindApp>
     </>
   );
 }

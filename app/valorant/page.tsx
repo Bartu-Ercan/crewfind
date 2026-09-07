@@ -12,8 +12,9 @@ export default function ValorantPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(jsonLd) }}
       />
-      <CrewFindApp game="valorant" />
-      <GameSeoContent game="valorant" />
+      <CrewFindApp game="valorant">
+        <GameSeoContent game="valorant" />
+      </CrewFindApp>
     </>
   );
 }
