@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, LoaderCircle, Upload, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getSupabaseBrowserClient } from "@/backend/supabase/browser-client";
 import { useAccount } from "@/frontend/components/account-provider";
@@ -8,6 +9,7 @@ import { readGuestAccounts, removeGuestAccounts } from "@/frontend/lib/guest-acc
 import type { GuestRiotAccount } from "@/frontend/types/account";
 
 export function GuestImportDialog() {
+  const pathname = usePathname();
   const { user, isPermanent, overview, refresh } = useAccount();
   const [accounts, setAccounts] = useState<GuestRiotAccount[]>([]);
   const [selected, setSelected] = useState<string[]>([]);
@@ -16,13 +18,13 @@ export function GuestImportDialog() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isPermanent || !overview || closed || user?.user_metadata?.needs_password === true) return;
+    if (pathname === "/admin" || !isPermanent || !overview || closed || user?.user_metadata?.needs_password === true) return;
     const local = readGuestAccounts();
     setAccounts(local);
     setSelected(local.map((account) => account.id));
-  }, [closed, isPermanent, overview, user]);
+  }, [closed, isPermanent, overview, pathname, user]);
 
-  if (!isPermanent || !overview || !accounts.length || closed || user?.user_metadata?.needs_password === true) return null;
+  if (pathname === "/admin" || !isPermanent || !overview || !accounts.length || closed || user?.user_metadata?.needs_password === true) return null;
 
   async function importSelected() {
     setBusy(true);

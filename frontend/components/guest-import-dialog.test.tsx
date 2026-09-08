@@ -5,6 +5,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { GuestImportDialog } from "./guest-import-dialog";
 
 const mocks = vi.hoisted(() => ({
+  pathname: "/valorant",
   user: { is_anonymous: false, user_metadata: { needs_password: true } },
   overview: { username: "oyuncu" },
   refresh: vi.fn(async () => undefined),
@@ -14,6 +15,10 @@ const mocks = vi.hoisted(() => ({
     game: "valorant",
     preference: {},
   }]),
+}));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => mocks.pathname,
 }));
 
 vi.mock("@/backend/supabase/browser-client", () => ({
@@ -49,6 +54,7 @@ describe("GuestImportDialog", () => {
   let root: Root;
 
   beforeEach(() => {
+    mocks.pathname = "/valorant";
     mocks.user.user_metadata.needs_password = true;
     mocks.readGuestAccounts.mockClear();
     container = document.createElement("div");
@@ -74,5 +80,14 @@ describe("GuestImportDialog", () => {
 
     expect(container.textContent).toContain("Hesabına aktar");
     expect(mocks.readGuestAccounts).toHaveBeenCalledOnce();
+  });
+
+  it("does not interrupt the admin page", async () => {
+    mocks.pathname = "/admin";
+    mocks.user.user_metadata.needs_password = false;
+    await act(async () => root.render(<GuestImportDialog />));
+
+    expect(container.querySelector("[role='dialog']")).toBeNull();
+    expect(mocks.readGuestAccounts).not.toHaveBeenCalled();
   });
 });
